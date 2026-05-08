@@ -1,0 +1,29 @@
+name: ScannerSDKQuickStart
+options:
+  minimumXcodeGenVersion: 2.38.0
+packages:
+  ScannerSDK:
+    url: https://github.com/netumscan/scanner-sdk-ios.git
+    branch: main
+targets:
+  ScannerSDKQuickStart:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: ScannerSDKQuickStart
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.samples.quickstart
+        PRODUCT_NAME: ScannerSDKQuickStart
+        SWIFT_VERSION: "5.9"
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Connect to scanner devices and receive barcode data.
+        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: Connect to scanner devices and receive barcode data.
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: ScannerSDK
+        product: ScannerSDK
