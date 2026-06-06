@@ -57,7 +57,7 @@ cd android/full-demo
 
 真机验证 BLE / SPP 行为时，按 [docs/smoke-checklist.md](docs/smoke-checklist.md) 执行。
 
-公开 samples 仓库只消费 `com.netumscan:scanner-sdk-android:0.1.1`，不包含私有开发仓库里的 `:sdk` 模块、`core`、`api-c` 或本地打包脚本。
+公开 samples 仓库只消费 `com.netumscan:scanner-sdk-android:0.1.2`，不包含私有开发仓库里的 `:sdk` 模块、`core`、`api-c` 或本地打包脚本。
 
 ## 新增功能前先确认
 

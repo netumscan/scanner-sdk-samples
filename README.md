@@ -16,12 +16,12 @@ This repository is intentionally split into two layers:
 
 ## SDK packages
 
-- Android: `com.netumscan:scanner-sdk-android:0.1.1`
-- iOS SwiftPM: `https://github.com/netumscan/scanner-sdk-ios.git`
+- Android: `com.netumscan:scanner-sdk-android:0.1.2`
+- iOS SwiftPM: `https://github.com/netumscan/scanner-sdk-ios.git`, pinned to the `v0.1.2` release revision
 
 Release readiness notes:
 
-- Android samples include `mavenLocal()` as a local validation fallback. Before public launch, publish `com.netumscan:scanner-sdk-android:0.1.1` to a public Maven repository.
-- iOS samples currently track the public SDK repository `main` branch because the public SwiftPM repository has not been tagged as `0.1.1` yet. Before public launch, publish the binary XCFramework asset, tag the SDK release, and pin the samples back to `from: 0.1.1`.
+- Android samples include `mavenLocal()` as a local validation fallback, but the public sample dependency is pinned to `com.netumscan:scanner-sdk-android:0.1.2`.
+- iOS samples are pinned to the public SwiftPM repository `v0.1.2` revision because the public repository currently uses a `v0.1.2` GitHub Release tag. If a plain SemVer `0.1.2` tag is added later, samples can switch back to `from: 0.1.2`.
 
 Use `quick-start` first when validating a fresh integration. Use `full-demo` when you need a more complete reference for permissions, discovery, connection lifecycle, command console behavior, logs, diagnostics, and model-specific capabilities.
