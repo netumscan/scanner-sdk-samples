@@ -10,7 +10,7 @@ class DemoCompatibilityRecordTest {
     fun recordIncludesPlatformTransportModelSessionAndFakeMode() {
         DemoDiagnosticsStore.updatePlatform(
             DemoPlatformDiagnostics(
-                demoVersion = "0.1.2",
+                demoVersion = "0.1.3",
                 androidVersion = "Android 15",
                 bluetoothEnabled = true,
                 locationEnabled = true,

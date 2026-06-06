@@ -4,7 +4,7 @@ options:
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    revision: f8d7b6fee8d76831a7148ae66642df4cf9379a99
+    from: 0.1.3
 targets:
   ScannerSDKQuickStart:
     type: application
