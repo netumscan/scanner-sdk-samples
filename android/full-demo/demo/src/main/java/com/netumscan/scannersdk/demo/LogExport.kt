@@ -54,38 +54,5 @@ fun shareTextPayload(
 private fun formatDebugEvent(event: DebugEvent): String {
     val timestamp = exportTimestampFormat.format(Date(event.timestampMs))
     val header = "[$timestamp] [${sourceLabel(event.source)}] [${levelLabel(event.level)}]"
-    val recordPrefix = " records="
-    val recordIndex = event.message.indexOf(recordPrefix)
-    if (event.source != DebugEventSource.COMMAND || recordIndex < 0 || !event.message.contains('\n')) {
-        return "$header ${event.message}"
-    }
-
-    val firstLine = event.message.substringBefore('\n')
-    val textMarker = " text="
-    val rawMarker = " raw="
-    val textIndex = firstLine.indexOf(textMarker)
-    val rawIndex = firstLine.indexOf(rawMarker)
-    if (textIndex < 0 || rawIndex < 0 || rawIndex <= textIndex) {
-        return "$header ${event.message}"
-    }
-
-    val summary = firstLine.substring(0, textIndex)
-    val raw = firstLine.substring(rawIndex + rawMarker.length)
-    val recordsBlock = event.message.substring(firstLine.length + 1)
-        .lineSequence()
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toList()
-
-    return buildString {
-        appendLine("$header $summary")
-        appendLine("  ${DemoStrings.text(R.string.log_export_records)}:")
-        recordsBlock.forEachIndexed { index, record ->
-            appendLine("  ${index + 1}. $record")
-        }
-        append(
-            "  ${DemoStrings.text(R.string.log_export_raw)}: " +
-                if (raw.isBlank()) DemoStrings.text(R.string.command_response_empty) else raw
-        )
-    }
+    return "$header ${redactDemoLogMessage(event.message)}"
 }

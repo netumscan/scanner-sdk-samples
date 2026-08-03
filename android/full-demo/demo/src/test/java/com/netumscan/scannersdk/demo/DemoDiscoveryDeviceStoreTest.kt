@@ -1,7 +1,6 @@
 package com.netumscan.scannersdk.demo
 
 import com.netumscan.scannersdk.TransportType
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +16,7 @@ class DemoDiscoveryDeviceStoreTest {
                 deviceId = "AA:BB",
                 name = "Scanner One",
                 transportType = TransportType.BLE_GATT,
-                modelId = DeviceModelId.CS7501,
+                modelKey = "CS7501",
                 rssi = -42,
             )
         )
@@ -38,7 +37,7 @@ class DemoDiscoveryDeviceStoreTest {
                 deviceId = "AA:BB",
                 name = "BLE Scanner",
                 transportType = TransportType.BLE_GATT,
-                modelId = DeviceModelId.CS7501,
+                modelKey = "CS7501",
             )
         )
         sppStore.upsert(
@@ -46,7 +45,7 @@ class DemoDiscoveryDeviceStoreTest {
                 deviceId = "11:22",
                 name = "SPP Scanner",
                 transportType = TransportType.SPP_CLASSIC,
-                modelId = DeviceModelId.CS7501,
+                modelKey = "CS7501",
             )
         )
 
@@ -64,7 +63,7 @@ class DemoDiscoveryDeviceStoreTest {
                     deviceId = "11:22",
                     name = "SPP Scanner",
                     transportType = TransportType.SPP_CLASSIC,
-                    modelId = DeviceModelId.CS7501,
+                    modelKey = "CS7501",
                 )
             )
         )
@@ -73,22 +72,22 @@ class DemoDiscoveryDeviceStoreTest {
     }
 
     @Test
-    fun resolveConnectionModelId_prefers_customer_selected_model() {
-        val resolved = resolveConnectionModelId(
-            selectedModelId = DeviceModelId.CS7501,
-            discoveredModelId = DeviceModelId.C740,
+    fun resolveConnectionModelKey_prefers_customer_selected_model() {
+        val resolved = resolveConnectionModelKey(
+            selectedModelKey = "CS7501",
+            discoveredModelKey = "C740",
         )
 
-        assertEquals(DeviceModelId.CS7501, resolved)
+        assertEquals("CS7501", resolved)
     }
 
     @Test
-    fun resolveConnectionModelId_falls_back_to_discovered_model_when_selected_model_is_unknown() {
-        val resolved = resolveConnectionModelId(
-            selectedModelId = DeviceModelId.UNKNOWN,
-            discoveredModelId = DeviceModelId.C740,
+    fun resolveConnectionModelKey_falls_back_to_discovered_model_when_selected_model_is_unknown() {
+        val resolved = resolveConnectionModelKey(
+            selectedModelKey = "",
+            discoveredModelKey = "C740",
         )
 
-        assertEquals(DeviceModelId.C740, resolved)
+        assertEquals("C740", resolved)
     }
 }

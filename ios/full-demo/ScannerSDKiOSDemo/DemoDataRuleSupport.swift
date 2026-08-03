@@ -48,31 +48,51 @@ extension DemoCommandCatalog {
         mode: DataRuleFormMode,
         valueA: String,
         valueB: String
-    ) throws -> (kind: DataRuleKind, primary: Data, secondary: Data) {
+    ) throws -> DataRule {
         switch mode {
         case .prefix:
-            return (.prefix, try parseASCIIEscapes(valueA), Data())
+            return try .prefix(parseAffixBytes(valueA, name: "prefix"))
         case .suffix:
-            return (.suffix, try parseASCIIEscapes(valueA), Data())
+            return try .suffix(parseAffixBytes(valueA, name: "suffix"))
         case .hideStart:
-            return (.hideStart, try parseSingleByteCount(valueA), Data())
+            return try .hideStart(Int(parseSingleByteValue(valueA)))
         case .hideMiddle:
-            return (.hideMiddle, try parseSingleByteCount(valueA), try parseSingleByteCount(valueB))
+            return try .hideMiddle(
+                start: Int(parseSingleByteValue(valueA)),
+                length: Int(parseSingleByteValue(valueB))
+            )
         case .hideEnd:
-            return (.hideEnd, try parseSingleByteCount(valueA), Data())
+            return try .hideEnd(Int(parseSingleByteValue(valueA)))
         case .replace:
-            return (.replace, try parseASCIIEscapes(valueA), try parseASCIIEscapes(valueB))
+            let source = try parseASCIIEscapes(valueA)
+            let target = try parseASCIIEscapes(valueB)
+            guard !source.isEmpty, source.count <= 6, target.count <= 5, source.count + target.count <= 6 else {
+                throw NSError(domain: "DemoCommandCatalog", code: 4, userInfo: [
+                    NSLocalizedDescriptionKey: DemoStrings.tr("data_rule_error_replace_length")
+                ])
+            }
+            return try .replace(source: source, target: target)
         }
     }
 
-    private static func parseSingleByteCount(_ text: String) throws -> Data {
+    private static func parseAffixBytes(_ text: String, name: String) throws -> Data {
+        let bytes = try parseASCIIEscapes(text)
+        guard !bytes.isEmpty, bytes.count <= 10 else {
+            throw NSError(domain: "DemoCommandCatalog", code: 5, userInfo: [
+                NSLocalizedDescriptionKey: "\(name) supports 1-10 bytes"
+            ])
+        }
+        return bytes
+    }
+
+    private static func parseSingleByteValue(_ text: String) throws -> UInt8 {
         guard let value = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)),
               value >= 1, value <= 255 else {
             throw NSError(domain: "DemoCommandCatalog", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: DemoStrings.tr("data_rule_error_count_range")
             ])
         }
-        return Data([UInt8(value)])
+        return UInt8(value)
     }
 
     private static func parseASCIIEscapes(_ text: String) throws -> Data {

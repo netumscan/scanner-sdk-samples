@@ -1,0 +1,112 @@
+Netum Scanner SDK License
+Version 1.0
+
+Copyright (c) 2026 NetumScan. All rights reserved.
+
+This license governs use of the Netum Scanner SDK, including binary SDK
+packages, public wrapper files, headers, package manifests, documentation,
+examples, and related release materials distributed by NetumScan
+("Software").
+
+1. License Grant
+
+Subject to this license, NetumScan grants you a worldwide, non-exclusive,
+royalty-free license to:
+
+- use the Software to develop, test, and operate applications that connect
+  to supported Netum scanner devices;
+- reproduce the Software as necessary for internal development, build,
+  testing, and backup purposes;
+- integrate the binary SDK packages into your applications; and
+- distribute the Software only as embedded in, bundled with, or required by
+  your applications, including applications used for commercial purposes.
+
+No separate runtime fee or commercial-use fee is required for this grant.
+
+2. Source Code and Closed-Source Status
+
+The Software is not open source. Except for files that NetumScan expressly
+publishes for package integration, API surface, or documentation purposes,
+NetumScan does not grant any right to access, copy, modify, publish, or
+redistribute source code.
+
+Any source files made visible in a distribution repository are provided only
+to support package integration, compilation, public API use, or documentation.
+They are not licensed as open-source code.
+
+3. Restrictions
+
+You may not:
+
+- sell, rent, lease, sublicense, or redistribute the Software as a standalone
+  SDK, library, component, development kit, source package, or competing
+  product;
+- publish, mirror, or upload the Software to another public package registry,
+  repository, marketplace, or download site except as part of your
+  application distribution permitted by this license;
+- modify, adapt, translate, or create derivative works of the Software except
+  as strictly necessary to integrate documented public APIs into your
+  application;
+- reverse engineer, decompile, disassemble, decrypt, extract, or otherwise
+  attempt to derive source code, protocols, algorithms, keys, private APIs,
+  or implementation details from the Software, except to the extent such
+  restriction is prohibited by applicable law;
+- remove or alter copyright, license, trademark, attribution, or proprietary
+  notices;
+- use the Software with unsupported devices in a way that falsely implies
+  NetumScan support, certification, or endorsement; or
+- use NetumScan names, marks, logos, or product names except to accurately
+  identify SDK compatibility or device integration.
+
+4. Ownership
+
+NetumScan and its licensors retain all ownership, intellectual property
+rights, and proprietary rights in and to the Software. No rights are granted
+except those expressly stated in this license.
+
+5. Third-Party Software
+
+The Software may include or depend on third-party software, operating system
+SDKs, package managers, build tools, or open-source components. Those
+components are governed by their own license terms. This license does not
+modify third-party license obligations.
+
+6. Updates and Compatibility
+
+NetumScan may provide updates, fixes, or new versions at its discretion.
+NetumScan does not guarantee that any version will remain available,
+compatible, or supported indefinitely.
+
+7. Feedback
+
+If you provide suggestions, bug reports, ideas, or other feedback, you grant
+NetumScan a perpetual, worldwide, royalty-free right to use that feedback
+without restriction or obligation.
+
+8. Termination
+
+This license terminates automatically if you violate its terms. Upon
+termination, you must stop using and distributing the Software and delete
+copies in your possession or control, except copies already embedded in
+previously distributed applications where removal is not technically
+practical.
+
+9. Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTIES OF
+ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+NON-INFRINGEMENT, AVAILABILITY, ACCURACY, OR ERROR-FREE OPERATION.
+
+10. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, NETUMSCAN WILL NOT BE LIABLE FOR
+ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE
+DAMAGES, OR FOR LOSS OF PROFITS, REVENUE, DATA, GOODWILL, OR BUSINESS
+OPPORTUNITY, ARISING FROM OR RELATED TO THE SOFTWARE OR THIS LICENSE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+11. Additional Terms
+
+If you have a separate written agreement with NetumScan for the Software,
+that agreement controls to the extent it conflicts with this license.

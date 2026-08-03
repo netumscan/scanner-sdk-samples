@@ -1,4 +1,24 @@
 <resources>
     <string name="app_name">Scanner SDK Quick Start</string>
+    <string name="sdk_version">SDK %1$s</string>
+    <string name="target_model">Target model</string>
+    <string name="start_discovery">Start Discovery</string>
+    <string name="stop_discovery">Stop Discovery</string>
+    <string name="retry_discovery">Retry Discovery</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="devices">Devices</string>
+    <string name="no_devices">No matching BLE scanners found yet.</string>
+    <string name="connect">Connect</string>
+    <string name="device_summary">%1$s · RSSI %2$s</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="trigger_scan">Trigger Scan</string>
+    <string name="refresh_info">Refresh Device Info</string>
+    <string name="read_battery">Read Battery</string>
+    <string name="device_info">Device Info</string>
+    <string name="battery">Battery</string>
+    <string name="not_loaded">Not loaded</string>
+    <string name="recent_scans">Recent Scans</string>
+    <string name="no_scans">No scans received.</string>
+    <string name="scan_summary">Type %1$d · %2$d characters</string>
+    <string name="permissions_required">Bluetooth permission is required to discover scanners.</string>
 </resources>
-

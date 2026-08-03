@@ -5,24 +5,20 @@ import android.content.Context
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.netumscan.scannersdk.ProtocolChannelKind
 import com.netumscan.scannersdk.ScannerSession
+import com.netumscan.scannersdk.ScannerSdk
 import com.netumscan.scannersdk.SessionState
 import com.netumscan.scannersdk.TransportType
-import com.netumscan.scannersdk.localizedLabel
 import com.netumscan.scannersdk.model.BleScanIssue
-import com.netumscan.scannersdk.model.BleTransportIssue
-import com.netumscan.scannersdk.model.BasicDeviceCommand
-import com.netumscan.scannersdk.model.DeviceModelId
+import com.netumscan.scannersdk.model.TransportIssue
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import com.netumscan.scannersdk.model.DiscoveryFailureCode
 import com.netumscan.scannersdk.model.DiscoveryFailure
-import com.netumscan.scannersdk.model.MasterCommand
 import com.netumscan.scannersdk.model.ScanTextCharset
 import com.netumscan.scannersdk.model.SessionFailure
-import com.netumscan.scannersdk.model.TransportFailureCode
 import com.netumscan.scannersdk.model.localizedLabel as localizedSdkLabel
 import com.netumscan.scannersdk.model.localizedStatusLabel as localizedSdkStatusLabel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,10 +54,14 @@ internal fun discoveryBlockerActionForFailure(
     return null
 }
 
-class DemoViewModel : ViewModel() {
-    private var selectedModelId = DeviceModelId.CS7501
+class DemoViewModel(
+    private val supportedModelsLoader: suspend (TransportType) -> List<DemoSupportedModel> = { transport ->
+        ScannerSdk.getSupportedDeviceModels(transport).map { it.toDemoSupportedModel() }
+    },
+    private val supportedModelsDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : ViewModel() {
+    private var selectedModelKey = "CS7501"
     private var selectedTransportMode: DemoTransportMode? = null
-    private var selectedChannelKind = ProtocolChannelKind.SCANNER_MASTER
     private val bleDeviceStore = DemoDiscoveryDeviceStore()
     private val sppDeviceStore = DemoDiscoveryDeviceStore()
     private val _uiState = MutableStateFlow(DiscoveryUiState())
@@ -74,13 +74,15 @@ class DemoViewModel : ViewModel() {
     private var observingSdk = false
     private var sessionObservationJobs: List<Job> = emptyList()
     private var sdkDebugJob: Job? = null
+    private var supportedModelsLoadJob: Job? = null
     private var isInitialized = false
+    private var lastObservedSessionState: SessionState? = null
     private var lastActionResultProvider: (() -> String)? = null
     private var errorMessageProvider: (() -> String)? = null
     private var connectingDeviceId: String? = null
 
     init {
-        DemoDiagnosticsStore.updateSelectedModel(selectedModelId)
+        DemoDiagnosticsStore.updateSelectedModel(selectedModelKey)
     }
 
     fun enableFakeMode() {
@@ -151,19 +153,19 @@ class DemoViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 discoveryCoordinator.stopDiscovery()
-                discoveryCoordinator.startDiscovery(DemoTransportMode.BLE, selectedModelId)
+                discoveryCoordinator.startDiscovery(DemoTransportMode.BLE, selectedModelKey)
             }.onSuccess { result ->
                 bleDeviceStore.clear()
                 result.devices.forEach(bleDeviceStore::upsert)
-                val discoveryModelId = selectedModelId
+                val discoveryModelKey = selectedModelKey
                 updateUiState { copy(devices = visibleDevicesFor(DemoTransportMode.BLE), isDiscovering = true) }
                 reportAction {
-                    "${DemoStrings.text(R.string.started_ble_discovery)}：${selectedModelSummary(discoveryModelId)}"
+                    "${DemoStrings.text(R.string.started_ble_discovery)}：${selectedModelSummary(discoveryModelKey)}"
                 }
                 appendEvent(
                     DebugEventSource.SDK,
                     DebugEventLevel.Info,
-                    "${DemoStrings.text(R.string.started_discovery_for_target_model)}: ${selectedModelSummary(selectedModelId)}"
+                    "${DemoStrings.text(R.string.started_discovery_for_target_model)}: ${selectedModelSummary(selectedModelKey)}"
                 )
             }.onFailure { error ->
                 updateUiState { copy(isDiscovering = false) }
@@ -249,39 +251,24 @@ class DemoViewModel : ViewModel() {
         appendEvent(DebugEventSource.UI, DebugEventLevel.Warn, message)
     }
 
-    fun setProtocolChannelKind(kind: ProtocolChannelKind) {
-        selectedChannelKind = kind
-        updateUiState {
-            copy(
-                selectedChannelKind = kind,
-                channelKindSummary = protocolChannelKindSummaryText(kind),
-                lastActionResult = localizedAction {
-                    DemoStrings.text(R.string.protocol_mode_updated)
-                },
-                errorMessage = null
-            )
-        }
-        appendEvent(
-            DebugEventSource.UI,
-            DebugEventLevel.Info,
-            "${DemoStrings.text(R.string.protocol_mode)}: ${protocolChannelKindSummary(kind)}"
-        )
-    }
-
-    fun setSelectedModel(modelId: DeviceModelId) {
+    fun setSelectedModel(modelKey: String) {
         if (hasActiveSession()) {
             reportAction {
                 DemoStrings.text(R.string.disconnect_before_changing_model)
             }
             return
         }
-        selectedModelId = modelId
-        DemoDiagnosticsStore.updateSelectedModel(modelId)
-        DemoDiagnosticsStore.updateResolvedModel(DeviceModelId.UNKNOWN)
+        val supportedModels = _uiState.value.supportedModels
+        if (supportedModels.isNotEmpty() && supportedModels.none { it.modelKey == modelKey }) {
+            return
+        }
+        selectedModelKey = modelKey
+        DemoDiagnosticsStore.updateSelectedModel(modelKey)
+        DemoDiagnosticsStore.updateResolvedModel("")
         updateUiState {
             copy(
-                selectedModelId = modelId,
-                selectedModelSummary = selectedModelSummaryText(modelId),
+                selectedModelKey = modelKey,
+                selectedModelSummary = selectedModelSummaryText(modelKey),
                 lastActionResult = localizedAction {
                     DemoStrings.text(R.string.test_target_model_updated_filter)
                 },
@@ -291,7 +278,7 @@ class DemoViewModel : ViewModel() {
         appendEvent(
             DebugEventSource.UI,
             DebugEventLevel.Info,
-            "${DemoStrings.text(R.string.test_target_model)}: ${selectedModelSummary(modelId)}"
+            "${DemoStrings.text(R.string.test_target_model)}: ${selectedModelSummary(modelKey)}"
         )
     }
 
@@ -332,6 +319,11 @@ class DemoViewModel : ViewModel() {
             DebugEventLevel.Info,
             "${DemoStrings.text(R.string.transport_mode)}: ${modeSummary(mode)}"
         )
+        loadSupportedModels(mode)
+    }
+
+    fun retrySupportedModels() {
+        selectedTransportMode?.let(::loadSupportedModels)
     }
 
     fun startSppDiscovery() {
@@ -342,7 +334,7 @@ class DemoViewModel : ViewModel() {
                 discoveryCoordinator.stopDiscovery()
                 sppDeviceStore.clear()
                 updateUiState { copy(devices = emptyList(), isDiscovering = false) }
-                discoveryCoordinator.startDiscovery(DemoTransportMode.SPP, selectedModelId)
+                discoveryCoordinator.startDiscovery(DemoTransportMode.SPP, selectedModelKey)
             }.onSuccess { result ->
                 result.devices.forEach(sppDeviceStore::upsert)
                 updateUiState {
@@ -401,7 +393,9 @@ class DemoViewModel : ViewModel() {
         viewModelScope.launch {
             appendEvent(DebugEventSource.SESSION, DebugEventLevel.Info, "${DemoStrings.text(R.string.connect_device)}: ${device.deviceId}")
             runCatching {
-                discoveryCoordinator.stopDiscovery()
+                withContext(Dispatchers.IO) {
+                    discoveryCoordinator.stopDiscovery()
+                }
             }.onSuccess {
                 appendEvent(
                     DebugEventSource.SDK,
@@ -428,27 +422,27 @@ class DemoViewModel : ViewModel() {
                     isDiscovering = false,
                 )
             }
-            val connectionModelId = resolveConnectionModelId(
-                selectedModelId = selectedModelId,
-                discoveredModelId = device.modelId,
+            val connectionModelKey = resolveConnectionModelKey(
+                selectedModelKey = selectedModelKey,
+                discoveredModelKey = device.modelKey,
             )
             runCatching {
-                discoveryCoordinator.connectReady(
-                    device = device,
-                    channelKind = selectedChannelKind,
-                    selectedModelId = connectionModelId,
-                    applyDecoderModule = device.transportType != TransportType.SPP_CLASSIC,
-                )
+                withContext(Dispatchers.IO) {
+                    discoveryCoordinator.connectReady(
+                        device = device,
+                        selectedModelKey = connectionModelKey,
+                    )
+                }
             }.onSuccess { result ->
                 val session = result.session
                 val fakeSession = result.fakeSession
                 check(session != null || fakeSession != null) { "Discovery backend did not return a session" }
                 if (session != null) {
-                    DemoSessionCoordinator.bind(device, session, connectionModelId)
+                    DemoSessionCoordinator.bind(device, session, connectionModelKey)
                 } else if (fakeSession != null) {
-                    DemoSessionCoordinator.bindFake(device, fakeSession, connectionModelId)
+                    DemoSessionCoordinator.bindFake(device, fakeSession, connectionModelKey)
                 }
-                DemoDiagnosticsStore.updateSelectedModel(connectionModelId)
+                DemoDiagnosticsStore.updateSelectedModel(connectionModelKey)
                 DemoDiagnosticsStore.updateTransport(mode)
                 DemoDiagnosticsStore.updateSessionState(session?.state?.value ?: fakeSession?.state?.value)
                 DemoDiagnosticsStore.updateFakeMode(discoveryCoordinator.isFakeMode)
@@ -456,18 +450,23 @@ class DemoViewModel : ViewModel() {
                 appendEvent(
                     DebugEventSource.SESSION,
                     DebugEventLevel.Info,
-                    "${DemoStrings.text(R.string.protocol_mode)}: ${protocolChannelKindSummary(selectedChannelKind)}"
+                    "${DemoStrings.text(R.string.selected_model)}: ${displayModelLabel(connectionModelKey)}"
                 )
+                lastObservedSessionState = null
                 if (session != null) {
-                    observeMainSession(device, session, connectionModelId)
+                    observeMainSession(device, session, connectionModelKey)
                 }
                 appendEvent(
                     DebugEventSource.SESSION,
                     DebugEventLevel.Info,
-                    "${DemoStrings.text(R.string.session_initialized_by_selected_model)}: ${selectedModelSummary(connectionModelId)}"
+                    "${DemoStrings.text(R.string.session_initialized_by_selected_model)}: ${selectedModelSummary(connectionModelKey)}"
                 )
                 reportAction {
-                    DemoStrings.text(R.string.device_ready_open_console)
+                    if (fakeSession != null) {
+                        DemoStrings.text(R.string.device_ready_open_console)
+                    } else {
+                        "${DemoStrings.text(R.string.session_initialized_by_selected_model)}: ${selectedModelSummary(connectionModelKey)}"
+                    }
                 }
                 refreshDiagnosticsSummary()
                 onConnected?.invoke()
@@ -561,7 +560,7 @@ class DemoViewModel : ViewModel() {
         }
     }
 
-    fun beep() {
+    fun setAckBeepEnabled(enabled: Boolean) {
         viewModelScope.launch {
             val session = activeSession ?: run {
                 appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
@@ -569,24 +568,28 @@ class DemoViewModel : ViewModel() {
             }
             if (!ensureOperationSupport(
                     session = session,
-                    operation = DemoSessionOperation.BEEP,
-                    labelProvider = { DemoStrings.text(R.string.ack_beep_on_action) }
+                    operation = DemoSessionOperation.SET_ACK_BEEP_ENABLED,
+                    labelProvider = {
+                        DemoStrings.text(if (enabled) R.string.ack_beep_on_action else R.string.ack_beep_off_action)
+                    }
                 )
             ) {
                 return@launch
             }
             runCatching {
-                session.beep()
+                session.setAckBeepEnabled(enabled)
             }.onSuccess {
-                reportAction { DemoStrings.text(R.string.beep_command_sent) }
-                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(R.string.beep_command_sent))
+                val success = if (enabled) R.string.beep_command_sent else R.string.ack_beep_off_command_sent
+                reportAction { DemoStrings.text(success) }
+                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(success))
             }.onFailure { error ->
-                reportError({ DemoStrings.text(R.string.beep_command_failed) }, error)
+                val failure = if (enabled) R.string.beep_command_failed else R.string.disable_ack_beep_failed
+                reportError({ DemoStrings.text(failure) }, error)
             }
         }
     }
 
-    fun disableAckBeep() {
+    fun setVibrationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             val session = activeSession ?: run {
                 appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
@@ -594,174 +597,23 @@ class DemoViewModel : ViewModel() {
             }
             if (!ensureOperationSupport(
                     session = session,
-                    operation = DemoSessionOperation.DISABLE_ACK_BEEP,
-                    labelProvider = { DemoStrings.text(R.string.ack_beep_off_action) }
+                    operation = DemoSessionOperation.SET_VIBRATION_ENABLED,
+                    labelProvider = {
+                        DemoStrings.text(if (enabled) R.string.vibrate_on_action else R.string.vibrate_off_action)
+                    }
                 )
             ) {
                 return@launch
             }
             runCatching {
-                session.disableAckBeep()
+                session.setVibrationEnabled(enabled)
             }.onSuccess {
-                reportAction { DemoStrings.text(R.string.ack_beep_off_command_sent) }
-                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(R.string.ack_beep_off_command_sent))
+                val success = if (enabled) R.string.vibrate_on_command_sent else R.string.vibrate_off_command_sent
+                reportAction { DemoStrings.text(success) }
+                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(success))
             }.onFailure { error ->
-                reportError({ DemoStrings.text(R.string.disable_ack_beep_failed) }, error)
-            }
-        }
-    }
-
-    fun vibrateOn() {
-        viewModelScope.launch {
-            val session = activeSession ?: run {
-                appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
-                return@launch
-            }
-            if (!ensureOperationSupport(
-                    session = session,
-                    operation = DemoSessionOperation.VIBRATE_ON,
-                    labelProvider = { DemoStrings.text(R.string.vibrate_on_action) }
-                )
-            ) {
-                return@launch
-            }
-            runCatching {
-                session.vibrateOn()
-            }.onSuccess {
-                reportAction { DemoStrings.text(R.string.vibrate_on_command_sent) }
-                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(R.string.vibrate_on_command_sent))
-            }.onFailure { error ->
-                reportError({ DemoStrings.text(R.string.enable_vibration_failed) }, error)
-            }
-        }
-    }
-
-    fun vibrateOff() {
-        viewModelScope.launch {
-            val session = activeSession ?: run {
-                appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
-                return@launch
-            }
-            if (!ensureOperationSupport(
-                    session = session,
-                    operation = DemoSessionOperation.VIBRATE_OFF,
-                    labelProvider = { DemoStrings.text(R.string.vibrate_off_action) }
-                )
-            ) {
-                return@launch
-            }
-            runCatching {
-                session.vibrateOff()
-            }.onSuccess {
-                reportAction { DemoStrings.text(R.string.vibrate_off_command_sent) }
-                appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Info, DemoStrings.text(R.string.vibrate_off_command_sent))
-            }.onFailure { error ->
-                reportError({ DemoStrings.text(R.string.disable_vibration_failed) }, error)
-            }
-        }
-    }
-
-    fun executeBasicDeviceCommand(command: BasicDeviceCommand) {
-        viewModelScope.launch {
-            val session = activeSession ?: run {
-                appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
-                return@launch
-            }
-            if (!ensureOperationSupport(
-                    session = session,
-                    operation = DemoSessionOperation.BASIC_DEVICE_COMMANDS,
-                    labelProvider = { basicCommandLabel(command) }
-                )
-            ) {
-                return@launch
-            }
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    session.executeBasicDeviceCommand(command)
-                }
-            }.onSuccess { response ->
-                val commandDisplay = basicCommandLabel(command)
-                val recordTextView = response.decodeRecords(currentRecordDisplayCharset())
-                val emptyText = DemoStrings.text(R.string.command_response_empty)
-                val textView = response.decodeText(currentCommandTextDisplayCharset()).ifBlank { emptyText }
-                val commandLabel = DemoStrings.text(R.string.basic_command)
-                val ackLabel = DemoStrings.text(R.string.command_response_ack)
-                val recordsLabel = DemoStrings.text(R.string.command_response_records)
-                val completeLabel = DemoStrings.text(R.string.command_response_complete)
-                val firstLabel = DemoStrings.text(R.string.command_response_first)
-                val summary = if (response.recordCount > 0) {
-                    "$commandLabel $commandDisplay $ackLabel=${response.acknowledged} $recordsLabel=${response.recordCount} $completeLabel=${response.recordsComplete} $firstLabel=${recordTextView.firstOrNull().orEmpty().ifBlank { emptyText }} text=$textView raw=${response.rawHex.ifBlank { emptyText }}"
-                } else {
-                    "$commandLabel $commandDisplay $ackLabel=${response.acknowledged} text=$textView raw=${response.rawHex.ifBlank { emptyText }}"
-                }
-                reportAction {
-                    "${DemoStrings.text(R.string.basic_command_completed)}: ${basicCommandLabel(command)}"
-                }
-                appendEvent(
-                    DebugEventSource.COMMAND,
-                    DebugEventLevel.Info,
-                    if (response.recordCount > 0) "$summary\n${recordTextView.joinToString(separator = "\n")}" else summary
-                )
-            }.onFailure { error ->
-                val commandDisplay = basicCommandLabel(command)
-                reportError({
-                    "${DemoStrings.text(R.string.basic_command_execution_failed)}: ${basicCommandLabel(command)}"
-                }, error)
-                appendEvent(
-                    DebugEventSource.COMMAND,
-                    DebugEventLevel.Error,
-                    "${DemoStrings.text(R.string.basic_command_failed)}: $commandDisplay: ${error.demoErrorDetail()}"
-                )
-            }
-        }
-    }
-
-    fun executeMasterCommand(command: MasterCommand) {
-        viewModelScope.launch {
-            val session = activeSession ?: run {
-                appendEvent(DebugEventSource.SESSION, DebugEventLevel.Warn, DemoStrings.text(R.string.no_active_session))
-                return@launch
-            }
-            if (!ensureMasterCommandSupport(session, command) { masterCommandLabel(command) }) {
-                return@launch
-            }
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    session.executeMasterCommand(command)
-                }
-            }.onSuccess { response ->
-                val commandDisplay = masterCommandLabel(command)
-                val recordTextView = response.decodeRecords(currentRecordDisplayCharset())
-                val emptyText = DemoStrings.text(R.string.command_response_empty)
-                val textView = response.decodeText(currentCommandTextDisplayCharset()).ifBlank { emptyText }
-                val commandLabel = DemoStrings.text(R.string.master_command)
-                val ackLabel = DemoStrings.text(R.string.command_response_ack)
-                val recordsLabel = DemoStrings.text(R.string.command_response_records)
-                val completeLabel = DemoStrings.text(R.string.command_response_complete)
-                val firstLabel = DemoStrings.text(R.string.command_response_first)
-                val summary = if (response.recordCount > 0) {
-                    "$commandLabel $commandDisplay $ackLabel=${response.acknowledged} $recordsLabel=${response.recordCount} $completeLabel=${response.recordsComplete} $firstLabel=${recordTextView.firstOrNull().orEmpty().ifBlank { emptyText }} text=$textView raw=${response.rawHex.ifBlank { emptyText }}"
-                } else {
-                    "$commandLabel $commandDisplay $ackLabel=${response.acknowledged} text=$textView raw=${response.rawHex.ifBlank { emptyText }}"
-                }
-                reportAction {
-                    "${DemoStrings.text(R.string.master_command_completed)}: ${masterCommandLabel(command)}"
-                }
-                appendEvent(
-                    DebugEventSource.COMMAND,
-                    DebugEventLevel.Info,
-                    if (response.recordCount > 0) "$summary\n${recordTextView.joinToString(separator = "\n")}" else summary
-                )
-            }.onFailure { error ->
-                val commandDisplay = masterCommandLabel(command)
-                reportError({
-                    "${DemoStrings.text(R.string.master_command_execution_failed)}: ${masterCommandLabel(command)}"
-                }, error)
-                appendEvent(
-                    DebugEventSource.COMMAND,
-                    DebugEventLevel.Error,
-                    "${DemoStrings.text(R.string.master_command_failed)}: $commandDisplay: ${error.demoErrorDetail()}"
-                )
+                val failure = if (enabled) R.string.enable_vibration_failed else R.string.disable_vibration_failed
+                reportError({ DemoStrings.text(failure) }, error)
             }
         }
     }
@@ -769,7 +621,7 @@ class DemoViewModel : ViewModel() {
     private fun observeMainSession(
         device: DiscoveredDevice,
         session: ScannerSession,
-        connectionModelId: DeviceModelId,
+        connectionModelKey: String,
     ) {
         sessionObservationJobs.forEach { it.cancel() }
         sessionObservationJobs = DemoSessionCoordinator.observe(
@@ -777,14 +629,16 @@ class DemoViewModel : ViewModel() {
             device = device,
             session = session,
             onState = { state ->
+                val previousState = lastObservedSessionState
+                lastObservedSessionState = state
                 DemoDiagnosticsStore.updateSessionState(state)
                 updateUiState {
                     copy(
-                        statusSummary = joinedText(uiText(R.string.session_state), rawDisplayText(": $state")),
+                        statusSummary = statusText(state),
                         hasActiveSession = state != SessionState.DISCONNECTED && state != SessionState.ERROR,
                         isConnecting = false,
                         connectingDeviceId = null,
-                        lastActionResult = if (state == SessionState.READY) {
+                        lastActionResult = if (state == SessionState.READY && previousState != SessionState.READY) {
                             localizedAction {
                                 DemoStrings.text(R.string.device_ready_open_console)
                             }
@@ -800,7 +654,13 @@ class DemoViewModel : ViewModel() {
                         }
                     )
                 }
-                appendEvent(DebugEventSource.SESSION, DebugEventLevel.Info, "${DemoStrings.text(R.string.session_state)}: $state")
+                if (state != previousState) {
+                    appendEvent(
+                        DebugEventSource.SESSION,
+                        DebugEventLevel.Info,
+                        "${DemoStrings.text(R.string.session_state)}: ${statusText(state).asStringForCurrentLanguage()}"
+                    )
+                }
                 if (state == SessionState.DISCONNECTED || state == SessionState.ERROR) {
                     closeDiscoverySession(
                         status = if (state == SessionState.ERROR) {
@@ -861,7 +721,7 @@ class DemoViewModel : ViewModel() {
     }
 
     private fun appendEvent(source: DebugEventSource, level: DebugEventLevel, message: String) {
-        val event = DebugEvent(source, level, message)
+        val event = DebugEvent(source, level, redactDemoLogMessage(message))
         AppLogStore.append(event)
         updateUiState { copy(events = (events + event).takeLast(200)) }
     }
@@ -937,13 +797,12 @@ class DemoViewModel : ViewModel() {
     }
 
     private fun handleSessionFailure(failure: SessionFailure) {
-        val summaryLabel = failure.code.localizedSdkStatusLabel()
+        val summaryLabel = failure.issue.localizedSdkStatusLabel()
         val summary = sdkText(summaryLabel.localizationKey, summaryLabel.fallbackDisplayName)
         val detail = buildString {
             append(failure.message)
             append(" [")
-            append(transportFailureCodeSummary(failure.code))
-            failure.bleTransportIssue?.let { issue -> append(", ble=").append(bleTransportIssueSummary(issue)) }
+            append(transportIssueSummary(failure.issue))
             failure.platformErrorCode?.let { code -> append(", raw=$code") }
             append("]")
         }
@@ -966,13 +825,8 @@ class DemoViewModel : ViewModel() {
         return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
     }
 
-    private fun bleTransportIssueSummary(issue: BleTransportIssue): String {
+    private fun transportIssueSummary(issue: TransportIssue): String {
         val label = issue.localizedSdkLabel()
-        return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
-    }
-
-    private fun transportFailureCodeSummary(code: TransportFailureCode): String {
-        val label = code.localizedSdkLabel()
         return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
     }
 
@@ -990,7 +844,7 @@ class DemoViewModel : ViewModel() {
         val latestState = activeSessionHandle?.state?.value
         DemoDiagnosticsStore.updateSdkInitialized(isInitialized)
         DemoDiagnosticsStore.updateTransport(selectedTransportMode)
-        DemoDiagnosticsStore.updateSelectedModel(selectedModelId)
+        DemoDiagnosticsStore.updateSelectedModel(selectedModelKey)
         DemoDiagnosticsStore.updateSessionState(latestState)
         updateUiState {
             copy(
@@ -1004,12 +858,14 @@ class DemoViewModel : ViewModel() {
                 } else {
                     rawDisplayText("${selectedDevice.name.ifBlank { DemoStrings.unknownDeviceName }} / ${selectedDevice.deviceId}")
                 },
-                selectedModelSummary = selectedModelSummaryText(selectedModelId),
+                selectedModelSummary = if (selectedModelKey.isBlank() && supportedModels.isEmpty()) {
+                    uiText(R.string.no_supported_models_for_transport)
+                } else {
+                    selectedModelSummaryText(selectedModelKey)
+                },
                 selectedTransportMode = selectedTransportMode,
                 selectedTransportSummary = selectedTransportMode?.let(::modeSummaryText)
                     ?: uiText(R.string.transport_not_selected),
-                selectedChannelKind = selectedChannelKind,
-                channelKindSummary = protocolChannelKindSummaryText(selectedChannelKind),
                 devices = selectedTransportMode?.let(::visibleDevicesFor).orEmpty(),
                 isInitialized = isInitialized,
                 hasActiveSession = hasActiveSession(),
@@ -1029,22 +885,75 @@ class DemoViewModel : ViewModel() {
         updateUiState { copy(diagnosticsSummary = DemoDiagnosticsStore.summaryText()) }
     }
 
-    private fun protocolChannelKindSummary(kind: ProtocolChannelKind): String {
-        return protocolChannelKindSummaryText(kind).asStringForCurrentLanguage()
-    }
-
-    private fun protocolChannelKindSummaryText(kind: ProtocolChannelKind): UiText {
-        val label = kind.localizedLabel()
-        return sdkText(label.localizationKey, label.fallbackDisplayName)
-    }
-
     private fun modeSummary(mode: DemoTransportMode): String = mode.summary()
 
     private fun modeSummaryText(mode: DemoTransportMode): UiText = dynamicText { modeSummary(mode) }
 
-    private fun selectedModelSummary(modelId: DeviceModelId): String = displayModelLabel(modelId)
+    private fun selectedModelSummary(modelKey: String): String = displayModelLabel(modelKey)
 
-    private fun selectedModelSummaryText(modelId: DeviceModelId): UiText = rawDisplayText(selectedModelSummary(modelId))
+    private fun selectedModelSummaryText(modelKey: String): UiText = rawDisplayText(selectedModelSummary(modelKey))
+
+    private fun loadSupportedModels(mode: DemoTransportMode) {
+        supportedModelsLoadJob?.cancel()
+        updateUiState {
+            copy(
+                supportedModels = emptyList(),
+                isLoadingSupportedModels = true,
+                supportedModelsError = null,
+            )
+        }
+        appendEvent(
+            DebugEventSource.SDK,
+            DebugEventLevel.Info,
+            DemoStrings.format(R.string.supported_models_loading_logged, mode.summary()),
+        )
+        supportedModelsLoadJob = viewModelScope.launch {
+            runCatching {
+                withContext(supportedModelsDispatcher) {
+                    normalizeSupportedModels(supportedModelsLoader(mode.sdkTransport))
+                }
+            }.onSuccess { models ->
+                if (selectedTransportMode != mode) return@onSuccess
+                val resolvedModelKey = selectSupportedModel(models, selectedModelKey)
+                selectedModelKey = resolvedModelKey
+                DemoDiagnosticsStore.updateSelectedModel(resolvedModelKey)
+                DemoDiagnosticsStore.updateResolvedModel("")
+                updateUiState {
+                    copy(
+                        selectedModelKey = resolvedModelKey,
+                        selectedModelSummary = if (resolvedModelKey.isBlank()) {
+                            uiText(R.string.no_supported_models_for_transport)
+                        } else {
+                            selectedModelSummaryText(resolvedModelKey)
+                        },
+                        supportedModels = models,
+                        isLoadingSupportedModels = false,
+                        supportedModelsError = null,
+                    )
+                }
+                appendEvent(
+                    DebugEventSource.SDK,
+                    DebugEventLevel.Info,
+                    DemoStrings.format(R.string.supported_models_loaded_logged, mode.summary(), models.size),
+                )
+            }.onFailure { error ->
+                if (selectedTransportMode != mode) return@onFailure
+                updateUiState {
+                    copy(
+                        supportedModels = emptyList(),
+                        isLoadingSupportedModels = false,
+                        supportedModelsError = uiText(R.string.supported_models_load_failed),
+                    )
+                }
+                appendEvent(
+                    DebugEventSource.SDK,
+                    DebugEventLevel.Error,
+                    "${DemoStrings.format(R.string.supported_models_load_failed_logged, mode.summary())}: " +
+                        DemoErrorFormatter.detail(error),
+                )
+            }
+        }
+    }
 
     private fun hasActiveSession(): Boolean {
         val state = activeSessionHandle?.state?.value ?: return false
@@ -1105,7 +1014,7 @@ class DemoViewModel : ViewModel() {
         sessionObservationJobs = emptyList()
         DemoSessionCoordinator.clear()
         DemoDiagnosticsStore.updateSessionState(null)
-        DemoDiagnosticsStore.updateResolvedModel(DeviceModelId.UNKNOWN)
+        DemoDiagnosticsStore.updateResolvedModel("")
         connectingDeviceId = null
         updateUiState {
             copy(
@@ -1121,45 +1030,18 @@ class DemoViewModel : ViewModel() {
         }
     }
 
-    private fun basicCommandLabel(command: BasicDeviceCommand): String {
-        val label = command.localizedSdkLabel()
-        return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
-    }
-
-    private fun masterCommandLabel(command: MasterCommand): String {
-        val label = command.localizedSdkLabel()
-        return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
-    }
-
     private suspend fun ensureOperationSupport(
         session: ScannerSession,
         operation: DemoSessionOperation,
         labelProvider: () -> String,
     ): Boolean {
         val supported = withContext(Dispatchers.IO) {
-            session.getOperationSupportSummary().supports(operation)
+            session.getOperationSupport().supports(operation)
         }
         if (supported) {
             return true
         }
         val reason = unsupportedDemoSessionOperationReason(operation)
-        reportError({ "${labelProvider()}：$reason" }, IllegalStateException(reason))
-        appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Warn, "${labelProvider()}: $reason")
-        return false
-    }
-
-    private suspend fun ensureMasterCommandSupport(
-        session: ScannerSession,
-        command: MasterCommand,
-        labelProvider: () -> String,
-    ): Boolean {
-        val supported = withContext(Dispatchers.IO) {
-            session.canExecuteMasterCommand(command)
-        }
-        if (supported) {
-            return true
-        }
-        val reason = unsupportedMasterCommandReason()
         reportError({ "${labelProvider()}：$reason" }, IllegalStateException(reason))
         appendEvent(DebugEventSource.COMMAND, DebugEventLevel.Warn, "${labelProvider()}: $reason")
         return false

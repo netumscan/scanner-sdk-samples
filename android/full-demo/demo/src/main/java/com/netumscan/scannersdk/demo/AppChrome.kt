@@ -89,7 +89,10 @@ fun DemoTopBar(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { menuExpanded = true }) {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.demoTestTag(DemoTestTags.TOP_BAR_MENU),
+                ) {
                     Image(
                         painter = painterResource(R.drawable.ic_demo_settings),
                         contentDescription = demoStringResource(R.string.settings),
@@ -121,6 +124,7 @@ fun DemoTopBar(
                     }
                     if (showLogsEntry) {
                         DropdownMenuItem(
+                            modifier = Modifier.demoTestTag(DemoTestTags.APP_LOG_MENU_ITEM),
                             text = { Text(demoStringResource(R.string.app_logs)) },
                             onClick = {
                                 menuExpanded = false

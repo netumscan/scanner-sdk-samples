@@ -2,12 +2,13 @@ import SwiftUI
 
 @main
 struct ScannerSDKQuickStartApp: App {
-    @StateObject private var model = QuickStartViewModel()
+    @StateObject private var viewModel = QuickStartViewModel(
+        backend: ScannerQuickStartBackend()
+    )
 
     var body: some Scene {
         WindowGroup {
-            ContentView(model: model)
+            ContentView(viewModel: viewModel)
         }
     }
 }
-

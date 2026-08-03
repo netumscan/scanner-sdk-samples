@@ -1,13 +1,14 @@
 package com.netumscan.scannersdk.demo
 
+import com.netumscan.scannersdk.ScannerSdk
 import com.netumscan.scannersdk.ScannerSession
 import com.netumscan.scannersdk.SessionState
 import com.netumscan.scannersdk.TransportType
+import com.netumscan.scannersdk.model.CapabilityEntryKind
 import com.netumscan.scannersdk.model.DeviceCapabilitySummary
-import com.netumscan.scannersdk.model.DeviceModelId
-import com.netumscan.scannersdk.model.ModuleFamily
 import com.netumscan.scannersdk.model.ScanEvent
 import com.netumscan.scannersdk.model.ScanTextCharset
+import com.netumscan.scannersdk.model.DeviceSupportStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,7 @@ internal interface DemoSessionHandle {
     val scanEvents: Flow<ScanEvent>
     val realSession: ScannerSession?
     fun getScanTextCharset(): ScanTextCharset
-    fun getScanTerminator(): ByteArray
+    fun getScanTextTerminator(): ByteArray
     suspend fun disconnect()
 }
 
@@ -39,7 +40,7 @@ internal class RealDemoSessionHandle(
 
     override fun getScanTextCharset(): ScanTextCharset = session.getScanTextCharset()
 
-    override fun getScanTerminator(): ByteArray = session.getScanTerminator()
+    override fun getScanTextTerminator(): ByteArray = session.getScanTextTerminator()
 
     override suspend fun disconnect() {
         session.disconnect()
@@ -49,8 +50,8 @@ internal class RealDemoSessionHandle(
 internal class FakeDemoSessionHandle(
     override val deviceId: String,
     override val transportType: TransportType,
-    val selectedModelId: DeviceModelId,
-    val capabilitySummary: DeviceCapabilitySummary = fakeCapabilitySummary(selectedModelId),
+    val selectedModelKey: String,
+    val publicCapabilitySummary: DeviceCapabilitySummary = fakeCapabilitySummary(selectedModelKey),
 ) : DemoSessionHandle {
     private val mutableState = MutableStateFlow(SessionState.READY)
     private val mutableScanEvents = MutableSharedFlow<ScanEvent>(extraBufferCapacity = 8)
@@ -62,28 +63,28 @@ internal class FakeDemoSessionHandle(
 
     override fun getScanTextCharset(): ScanTextCharset = ScanTextCharset.UTF_8
 
-    override fun getScanTerminator(): ByteArray = byteArrayOf(0x0D)
+    override fun getScanTextTerminator(): ByteArray = byteArrayOf(0x0D)
 
     override suspend fun disconnect() {
         mutableState.value = SessionState.DISCONNECTED
     }
 }
 
-private fun fakeCapabilitySummary(modelId: DeviceModelId): DeviceCapabilitySummary {
-    val resolved = if (modelId == DeviceModelId.UNKNOWN) DeviceModelId.CS7501 else modelId
+private fun fakeCapabilitySummary(modelKey: String): DeviceCapabilitySummary {
+    val resolved = if (modelKey == "") "CS7501" else modelKey
+    val definitions = runCatching {
+        ScannerSdk.getCapabilityEntries(resolved, TransportType.BLE_GATT)
+            .filter { it.kind == CapabilityEntryKind.SETTING }
+    }.getOrDefault(emptyList())
     return DeviceCapabilitySummary(
-        modelId = resolved,
+        modelKey = resolved,
         modelName = displayModelLabel(resolved),
-        defaultCommandSet = com.netumscan.scannersdk.model.CommandSetKind.MASTER_WITH_MODULE_INFO,
-        formFactor = com.netumscan.scannersdk.model.DeviceFormFactor.MASTER_WITH_MODULE,
-        moduleFamily = ModuleFamily.NT212X,
-        supportsBasicDeviceCommands = true,
-        supportsMasterCommands = true,
-        supportsNativeModuleCommands = false,
-        supportsModuleCommandBridge = true,
-        supportsModuleCommands = true,
-        supportsScannerMaster = true,
-        supportsModulePassthrough = true,
-        supportStatus = com.netumscan.scannersdk.model.SupportStatus.CODE_ONLY,
+        supportsScanControl = false,
+        supportsDeviceCommands = true,
+        supportsSettingsRead = definitions.any { it.supportsRead },
+        supportsSettingsWrite = definitions.any { it.supportsWrite },
+        supportsDataRules = true,
+        supportsBattery = true,
+        supportStatus = DeviceSupportStatus.CODE_ONLY,
     )
 }

@@ -34,9 +34,8 @@ final class DemoRecoveryActionTests: XCTestCase {
             sessionHandle: 1,
             deviceId: "device-1",
             transportType: .bleGatt,
-            code: .gattFailure,
+            issue: .bleGattFailure,
             message: "GATT failed",
-            bleTransportIssue: .gattFailure,
             platformErrorCode: nil
         )
 

@@ -11,7 +11,7 @@ object AppLogStore {
     val events: StateFlow<List<DebugEvent>> = _events.asStateFlow()
 
     fun append(event: DebugEvent) {
-        _events.value = (_events.value + event).takeLast(MAX_EVENTS)
+        _events.value = (_events.value + event.redactedForStorage()).takeLast(MAX_EVENTS)
     }
 
     fun clear() {

@@ -40,13 +40,18 @@ final class CachedDeviceStateSummaryLoaderTests: XCTestCase {
                     versionChipsetCode: "chip",
                     versionChipsetSuffix: "chipsfx",
                     versionReleaseCode: "release",
-                    versionExtensionCode: "ext"
+                    versionExtensionCode: "ext",
+                    bluetoothName: "scanner-bt",
+                    bluetoothFirmwareVersion: "bt-fw"
                 )
             }
         )
 
         XCTAssertEqual(infoCalls, 1)
-        XCTAssertEqual(summary.infoSummary, "固件=FW1.0  硬件=HW2.0  系列码=customer")
+        XCTAssertEqual(
+            summary.infoSummary,
+            "固件=FW1.0  硬件=HW2.0  系列码=customer  蓝牙名称=scanner-bt  蓝牙固件版本=bt-fw"
+        )
         XCTAssertEqual(summary.deviceCharsetSummary, "未读取")
         XCTAssertEqual(summary.deviceTerminalSummary, "未读取")
     }

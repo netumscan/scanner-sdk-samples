@@ -22,8 +22,8 @@ final class DiscoveryCoordinator {
         try backend.initialize()
     }
 
-    func startDiscovery(selectedModelId: DeviceModelId) throws -> DemoDiscoveryStartResult {
-        try backend.startDiscovery(selectedModelId: selectedModelId)
+    func startDiscovery(selectedModelKey: String) throws -> DemoDiscoveryStartResult {
+        try backend.startDiscovery(selectedModelKey: selectedModelKey)
     }
 
     func stopDiscovery() throws {
@@ -32,15 +32,13 @@ final class DiscoveryCoordinator {
 
     func connectReady(
         _ device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Bool
+        selectedModelKey: String,
+        applyModelConfig: Bool
     ) async throws -> DemoConnectResult {
         try await backend.connectReady(
             device,
-            channelKind: channelKind,
-            selectedModelId: selectedModelId,
-            applyDecoderModule: applyDecoderModule
+            selectedModelKey: selectedModelKey,
+            applyModelConfig: applyModelConfig
         )
     }
 }

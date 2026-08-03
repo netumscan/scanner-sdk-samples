@@ -8,9 +8,8 @@ struct AppLogsPageView: View {
     @State private var selectedSources = Set<ConsoleEventSource>()
     @State private var levelFilter: AppLogLevelFilter = .all
     @State private var query = ""
-    @State private var exportSnapshot = ""
-    @State private var isSharePresented = false
     @State private var autoScrollToLatest = true
+    @State private var showsLogTools = false
 
     private var filteredEvents: [ConsoleEvent] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -42,151 +41,155 @@ struct AppLogsPageView: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            List {
-                Section(DemoStrings.tr("filters")) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
                     Color.clear
                         .frame(height: 0)
                         .id("logs-top")
 
-                    LabeledContent(
-                        DemoStrings.tr("source_filter"),
-                        value: sourceFilterSummary(selectedSources)
-                    )
-                    Menu(DemoStrings.tr("toggle_sources")) {
-                        ForEach(ConsoleEventSource.allCases) { source in
-                            Button {
-                                if selectedSources.contains(source) {
-                                    selectedSources.remove(source)
-                                } else {
-                                    selectedSources.insert(source)
-                                }
-                            } label: {
-                                Label(
-                                    source.label,
-                                    systemImage: selectedSources.contains(source) ? "checkmark.circle.fill" : "circle"
-                                )
-                            }
-                        }
-                    }
-
-                    Picker(DemoStrings.tr("level_filter"), selection: $levelFilter) {
-                        ForEach(AppLogLevelFilter.allCases) { filter in
-                            Text(filter.label).tag(filter)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    Toggle(isOn: $autoScrollToLatest) {
-                        Text(DemoStrings.tr("auto_scroll_latest"))
-                    }
-
-                    if !query.isEmpty {
+                    AppLogsSectionCard(title: DemoStrings.tr("export_cleanup")) {
                         LabeledContent(
-                            DemoStrings.tr("search"),
-                            value: query
+                            DemoStrings.tr("results"),
+                            value: "\(filteredEvents.count) / \(viewModel.events.count)"
                         )
-                    }
-                }
 
-                Section(DemoStrings.tr("sdk_diagnostics")) {
-                    LabeledContent(
-                        DemoStrings.tr("warnings_errors"),
-                        value: "\(sdkWarningCount) / \(sdkErrorCount)"
-                    )
-
-                    if sdkDiagnostics.isEmpty {
-                        Text(DemoStrings.tr("none"))
-                        .foregroundStyle(.secondary)
-                    } else {
-                        Button(DemoStrings.tr("focus_sdk_logs")) {
-                            selectedSources = [.sdk]
-                            levelFilter = .all
-                            query = ""
-                        }
-                        .accessibilityIdentifier(DemoAccessibility.logsFocusSdkButton)
-
-                        ForEach(Array(sdkDiagnostics.suffix(3).reversed())) { event in
-                            Text(formatLogLine(event))
-                                .font(.system(.footnote, design: .monospaced))
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
-
-                Section(DemoStrings.tr("export_cleanup")) {
-                    LabeledContent(
-                        DemoStrings.tr("results"),
-                        value: "\(filteredEvents.count) / \(viewModel.events.count)"
-                    )
-
-                    Button(DemoStrings.tr("export_filtered")) {
-                        exportSnapshot = viewModel.makeLogExport(
-                            title: DemoStrings.tr("app_logs"),
-                            scopeSummaryLines: [
-                                "\(DemoStrings.tr("source_filter")): \(sourceFilterSummary(selectedSources))",
-                                "\(DemoStrings.tr("level_filter")): \(levelFilter.label)",
-                                "\(DemoStrings.tr("search")): \(query.isEmpty ? DemoStrings.tr("none") : query)",
-                                "\(DemoStrings.tr("event_count")): \(filteredEvents.count)",
-                            ] + sdkDiagnosticsSummaryLines(for: filteredEvents),
-                            events: filteredEvents
+                        AppLogFilterSummaryBlock(
+                            filteredCount: filteredEvents.count,
+                            totalCount: viewModel.events.count,
+                            selectedSources: selectedSources,
+                            levelFilter: levelFilter,
+                            query: query,
+                            sdkWarningCount: sdkWarningCount,
+                            sdkErrorCount: sdkErrorCount
                         )
-                        isSharePresented = true
-                    }
-                    .disabled(filteredEvents.isEmpty)
-                    .accessibilityIdentifier(DemoAccessibility.logsExportFilteredButton)
 
-                    Button(DemoStrings.tr("export_all_logs")) {
-                        exportSnapshot = viewModel.makeLogExport(
-                            title: DemoStrings.tr("app_logs"),
-                            scopeSummaryLines: [
-                                "\(DemoStrings.tr("export_scope")): \(DemoStrings.tr("all_logs"))",
-                                "\(DemoStrings.tr("event_count")): \(viewModel.events.count)",
-                            ] + sdkDiagnosticsSummaryLines(for: viewModel.events),
-                            events: viewModel.events
-                        )
-                        isSharePresented = true
-                    }
-                    .disabled(viewModel.events.isEmpty)
-                    .accessibilityIdentifier(DemoAccessibility.logsExportAllButton)
-
-                    Button(DemoStrings.tr("export_compatibility_record")) {
-                        exportSnapshot = viewModel.makeCompatibilityRecordExport()
-                        isSharePresented = true
-                    }
-
-                    Button(DemoStrings.tr("clear_global_logs"), role: .destructive) {
-                        viewModel.clearLogs()
-                    }
-                    .disabled(viewModel.events.isEmpty)
-                    .accessibilityIdentifier(DemoAccessibility.logsClearButton)
-                }
-
-                Section(DemoStrings.tr("events")) {
-                    if filteredEvents.isEmpty {
-                        Text(DemoStrings.tr("no_logs"))
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(filteredEvents) { event in
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {
-                                    Text(event.source.label)
-                                        .font(.caption2)
-                                        .fontWeight(.bold)
-                                    Text(event.level.label)
-                                        .font(.caption2)
-                                        .foregroundStyle(color(for: event.level))
-                                }
-                                Text(formatLogLine(event))
-                                    .font(.system(.footnote, design: .monospaced))
-                                    .textSelection(.enabled)
+                        HStack(spacing: 10) {
+                            ShareLink(
+                                item: viewModel.makeLogExport(
+                                    title: DemoStrings.tr("app_logs"),
+                                    scopeSummaryLines: [
+                                        "\(DemoStrings.tr("export_scope")): \(DemoStrings.tr("all_logs"))",
+                                        "\(DemoStrings.tr("event_count")): \(viewModel.events.count)",
+                                    ] + sdkDiagnosticsSummaryLines(for: viewModel.events),
+                                    events: viewModel.events
+                                )
+                            ) {
+                                Text(DemoStrings.tr("export_all_logs"))
+                                    .frame(maxWidth: .infinity)
                             }
-                            .padding(.vertical, 4)
+                            .disabled(viewModel.events.isEmpty)
+                            .accessibilityIdentifier(DemoAccessibility.logsExportAllButton)
+
+                            ShareLink(item: viewModel.makeCompatibilityRecordExport()) {
+                                Text(DemoStrings.tr("export_compatibility_record"))
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
+
+                        DisclosureGroup(DemoStrings.tr("advanced_log_tools"), isExpanded: $showsLogTools) {
+                            LabeledContent(
+                                DemoStrings.tr("source_filter"),
+                                value: sourceFilterSummary(selectedSources)
+                            )
+                            Menu(DemoStrings.tr("toggle_sources")) {
+                                ForEach(ConsoleEventSource.allCases) { source in
+                                    Button {
+                                        if selectedSources.contains(source) {
+                                            selectedSources.remove(source)
+                                        } else {
+                                            selectedSources.insert(source)
+                                        }
+                                    } label: {
+                                        Label(
+                                            source.label,
+                                            systemImage: selectedSources.contains(source) ? "checkmark.circle.fill" : "circle"
+                                        )
+                                    }
+                                }
+                            }
+
+                            Picker(DemoStrings.tr("level_filter"), selection: $levelFilter) {
+                                ForEach(AppLogLevelFilter.allCases) { filter in
+                                    Text(filter.label).tag(filter)
+                                }
+                            }
+                            .pickerStyle(.menu)
+
+                            Toggle(isOn: $autoScrollToLatest) {
+                                Text(DemoStrings.tr("auto_scroll_latest"))
+                            }
+
+                            LabeledContent(
+                                DemoStrings.tr("warnings_errors"),
+                                value: "\(sdkWarningCount) / \(sdkErrorCount)"
+                            )
+                            if !sdkDiagnostics.isEmpty {
+                                Button(DemoStrings.tr("focus_sdk_logs")) {
+                                    selectedSources = [.sdk]
+                                    levelFilter = .all
+                                    query = ""
+                                }
+                                .accessibilityIdentifier(DemoAccessibility.logsFocusSdkButton)
+                            }
+
+                            ShareLink(
+                                item: viewModel.makeLogExport(
+                                    title: DemoStrings.tr("app_logs"),
+                                    scopeSummaryLines: [
+                                        "\(DemoStrings.tr("source_filter")): \(sourceFilterSummary(selectedSources))",
+                                        "\(DemoStrings.tr("level_filter")): \(levelFilter.label)",
+                                        "\(DemoStrings.tr("search")): \(query.isEmpty ? DemoStrings.tr("none") : query)",
+                                        "\(DemoStrings.tr("event_count")): \(filteredEvents.count)",
+                                    ] + sdkDiagnosticsSummaryLines(for: filteredEvents),
+                                    events: filteredEvents
+                                )
+                            ) {
+                                Text(DemoStrings.tr("export_filtered"))
+                            }
+                            .disabled(filteredEvents.isEmpty)
+                            .accessibilityIdentifier(DemoAccessibility.logsExportFilteredButton)
+
+                            Button(DemoStrings.tr("clear_global_logs"), role: .destructive) {
+                                viewModel.clearLogs()
+                            }
+                            .disabled(viewModel.events.isEmpty)
+                            .accessibilityIdentifier(DemoAccessibility.logsClearButton)
                         }
                     }
+
+                    AppLogsSectionCard(title: DemoStrings.tr("recent_events")) {
+                        if filteredEvents.isEmpty {
+                            Text(DemoStrings.tr("no_logs"))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ForEach(filteredEvents) { event in
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Text(event.source.label)
+                                                .font(.caption2)
+                                                .fontWeight(.bold)
+                                            Text(event.level.label)
+                                                .font(.caption2)
+                                                .foregroundStyle(color(for: event.level))
+                                        }
+                                        Text(formatLogLine(event))
+                                            .font(.system(.footnote, design: .monospaced))
+                                            .textSelection(.enabled)
+                                    }
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                                }
+                            }
+                        }
+                    }
+
                     Color.clear
                         .frame(height: 1)
                         .id("logs-bottom")
                 }
+                .padding(16)
             }
             .accessibilityIdentifier(DemoAccessibility.logsList)
             .onChange(of: filteredEvents.count) { _ in
@@ -227,9 +230,6 @@ struct AppLogsPageView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: DemoStrings.tr("search_message_source")
         )
-        .sheet(isPresented: $isSharePresented) {
-            ActivityView(activityItems: [exportSnapshot])
-        }
     }
 
     private func color(for level: ConsoleEventLevel) -> Color {
@@ -239,5 +239,72 @@ struct AppLogsPageView: View {
         case .warn: return .orange
         case .error: return .red
         }
+    }
+}
+
+private struct AppLogFilterSummaryBlock: View {
+    let filteredCount: Int
+    let totalCount: Int
+    let selectedSources: Set<ConsoleEventSource>
+    let levelFilter: AppLogLevelFilter
+    let query: String
+    let sdkWarningCount: Int
+    let sdkErrorCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(DemoStrings.tr("filter_summary", fallback: "Filter Summary"))
+                .font(.subheadline.weight(.semibold))
+            Text(
+                DemoStrings.format(
+                    "filter_summary_format",
+                    fallback: "%d / %d events, sources=%@, level=%@",
+                    filteredCount,
+                    totalCount,
+                    sourceFilterSummary(selectedSources),
+                    levelFilter.label
+                )
+            )
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(
+                    DemoStrings.format(
+                        "search_keyword_format",
+                        fallback: "Search keyword: %@",
+                        query
+                    )
+                )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+            Text("\(DemoStrings.tr("warnings_errors")): \(sdkWarningCount) / \(sdkErrorCount)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct AppLogsSectionCard<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+            content
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
     }
 }

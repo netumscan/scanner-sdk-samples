@@ -46,12 +46,14 @@ class CachedDeviceStateSummaryLoaderTest {
                     versionChipsetSuffix = "chipsfx",
                     versionReleaseCode = "release",
                     versionExtensionCode = "ext",
+                    bluetoothName = "scanner-bt",
+                    bluetoothFirmwareVersion = "bt-fw",
                 )
             },
         )
 
         assertEquals(1, infoCalls)
-        assertEquals("固件=FW1.0  硬件=HW2.0  系列码=customer", summary.infoSummary.asStringForCurrentLanguage())
+        assertEquals("固件=FW1.0  硬件=HW2.0  系列码=customer  蓝牙名称=scanner-bt  蓝牙固件版本=bt-fw", summary.infoSummary.asStringForCurrentLanguage())
         assertEquals("当前页面未自动查询设备配置项", summary.deviceCharsetSummary.asStringForCurrentLanguage())
         assertEquals("当前页面未自动查询设备终端符", summary.deviceTerminalSummary.asStringForCurrentLanguage())
     }

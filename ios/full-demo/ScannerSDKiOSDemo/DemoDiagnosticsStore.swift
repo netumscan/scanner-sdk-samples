@@ -4,20 +4,22 @@ import ScannerSDK
 import UIKit
 
 struct DemoPlatformDiagnostics: Equatable {
-    var appVersion = "-"
+    var demoVersion = "-"
+    var demoBuild = "-"
+    var sdkVersion = "-"
+    var sdkCommit = "-"
     var iosVersion = "-"
     var bluetoothAuthorization = "-"
 
-    static func current() -> DemoPlatformDiagnostics {
+    static func current(sdkVersion: String = "-") -> DemoPlatformDiagnostics {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String
         let build = info?["CFBundleVersion"] as? String
-        let displayVersion = [version, build.map { "(\($0))" }]
-            .compactMap { $0 }
-            .joined(separator: " ")
-            .ifBlank("-")
         return DemoPlatformDiagnostics(
-            appVersion: displayVersion,
+            demoVersion: version?.ifBlank("-") ?? "-",
+            demoBuild: build?.ifBlank("-") ?? "-",
+            sdkVersion: sdkVersion.ifBlank("-"),
+            sdkCommit: (info?["NSDKSdkCommit"] as? String)?.ifBlank("local-dev") ?? "local-dev",
             iosVersion: "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)",
             bluetoothAuthorization: bluetoothAuthorizationSummary()
         )
@@ -42,9 +44,10 @@ struct DemoPlatformDiagnostics: Equatable {
 struct DemoDiagnosticsState: Equatable {
     var platform = DemoPlatformDiagnostics.current()
     var sdkInitialized = false
-    var selectedModelId: DeviceModelId = .unknown
-    var resolvedModelId: DeviceModelId = .unknown
+    var selectedModelKey: String = ""
+    var resolvedModelKey: String = ""
     var sessionState: SessionState?
+    var recentSessionInitStage: String?
     var recentFailure: String?
     var fakeMode = false
 }
@@ -53,24 +56,28 @@ struct DemoDiagnosticsState: Equatable {
 final class DemoDiagnosticsStore {
     private var state = DemoDiagnosticsState()
 
-    func refreshPlatform() {
-        state.platform = .current()
+    func refreshPlatform(sdkVersion: String = "-") {
+        state.platform = .current(sdkVersion: sdkVersion)
     }
 
     func updateSdkInitialized(_ initialized: Bool) {
         state.sdkInitialized = initialized
     }
 
-    func updateSelectedModel(_ modelId: DeviceModelId) {
-        state.selectedModelId = modelId
+    func updateSelectedModel(_ modelKey: String) {
+        state.selectedModelKey = modelKey
     }
 
-    func updateResolvedModel(_ modelId: DeviceModelId) {
-        state.resolvedModelId = modelId
+    func updateResolvedModel(_ modelKey: String) {
+        state.resolvedModelKey = modelKey
     }
 
     func updateSessionState(_ sessionState: SessionState?) {
         state.sessionState = sessionState
+    }
+
+    func updateRecentSessionInitStage(_ detail: String?) {
+        state.recentSessionInitStage = detail
     }
 
     func updateRecentFailure(_ detail: String?) {
@@ -87,11 +94,13 @@ final class DemoDiagnosticsStore {
 
     func summaryText() -> String {
         [
-            "\(DemoStrings.tr("diagnostics_demo_platform")): \(state.platform.appVersion) / \(state.platform.iosVersion)",
+            "\(DemoStrings.tr("diagnostics_demo_platform")): \(state.platform.demoVersion) (\(state.platform.demoBuild)) / \(state.platform.iosVersion)",
+            "SDK: \(state.platform.sdkVersion) / \(state.platform.sdkCommit)",
             "\(DemoStrings.tr("diagnostics_permissions")): bluetooth=\(state.platform.bluetoothAuthorization)",
             "\(DemoStrings.tr("diagnostics_sdk_state")): initialized=\(flag(state.sdkInitialized)) transport=\(DemoStrings.tr("ios_ble_only"))",
-            "\(DemoStrings.tr("diagnostics_model_state")): selected=\(modelLabel(state.selectedModelId)) resolved=\(modelLabel(state.resolvedModelId))",
+            "\(DemoStrings.tr("diagnostics_model_state")): selected=\(modelLabel(state.selectedModelKey)) resolved=\(modelLabel(state.resolvedModelKey))",
             "\(DemoStrings.tr("diagnostics_session_state")): \(state.sessionState.map { String(describing: $0) } ?? DemoStrings.tr("none"))",
+            "\(DemoStrings.tr("diagnostics_session_init_stage")): \(state.recentSessionInitStage ?? DemoStrings.tr("none"))",
             "\(DemoStrings.tr("diagnostics_recent_failure")): \(state.recentFailure ?? DemoStrings.tr("none"))",
             "\(DemoStrings.tr("diagnostics_fake_mode")): \(flag(state.fakeMode))",
         ].joined(separator: "\n")
@@ -101,7 +110,7 @@ final class DemoDiagnosticsStore {
         DemoStrings.tr(value ? "diagnostics_yes" : "diagnostics_no")
     }
 
-    private func modelLabel(_ modelId: DeviceModelId) -> String {
-        modelId == .unknown ? DemoStrings.tr("none") : displayModelLabel(modelId)
+    private func modelLabel(_ modelKey: String) -> String {
+        modelKey == "" ? DemoStrings.tr("none") : displayModelLabel(modelKey)
     }
 }

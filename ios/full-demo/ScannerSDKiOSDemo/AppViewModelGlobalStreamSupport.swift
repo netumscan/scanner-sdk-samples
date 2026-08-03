@@ -84,13 +84,9 @@ extension AppViewModel {
     }
 
     func sessionFailureDetail(_ failure: SessionFailure) -> String {
-        let label = failure.code.localizedStatusLabel
+        let label = failure.issue.localizedStatusLabel
         let message = "\(DemoStrings.sdk(label.localizationKey, fallback: label.fallbackDisplayName)): \(failure.message)"
         var metadata: [String] = []
-        if let issue = failure.bleTransportIssue {
-            let issueLabel = issue.localizedLabel
-            metadata.append("ble=\(DemoStrings.sdk(issueLabel.localizationKey, fallback: issueLabel.fallbackDisplayName))")
-        }
         if let code = failure.platformErrorCode {
             metadata.append("raw=\(code)")
         }

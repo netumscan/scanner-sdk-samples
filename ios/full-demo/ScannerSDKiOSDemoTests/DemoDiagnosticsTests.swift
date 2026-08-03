@@ -4,6 +4,26 @@ import XCTest
 
 @MainActor
 final class DemoDiagnosticsTests: XCTestCase {
+    func testCompatibilityRecordIncludesBuildProvenance() {
+        let state = DemoDiagnosticsState(
+            platform: DemoPlatformDiagnostics(
+                demoVersion: "1.0.0",
+                demoBuild: "12",
+                sdkVersion: "1.0.0",
+                sdkCommit: "4989fda4",
+                iosVersion: "iOS 16.7.16",
+                bluetoothAuthorization: "authorized"
+            )
+        )
+
+        let record = DemoCompatibilityRecord.format(state: state)
+
+        XCTAssertTrue(record.contains("demoVersion=1.0.0"))
+        XCTAssertTrue(record.contains("demoBuild=12"))
+        XCTAssertTrue(record.contains("sdkVersion=1.0.0"))
+        XCTAssertTrue(record.contains("sdkCommit=4989fda4"))
+    }
+
     func testDiagnosticsSummaryFollowsSelectedLanguage() {
         let localization = DemoLocalization.shared
         let originalLanguage = localization.language
@@ -11,8 +31,8 @@ final class DemoDiagnosticsTests: XCTestCase {
 
         let store = DemoDiagnosticsStore()
         store.updateSdkInitialized(true)
-        store.updateSelectedModel(.cs7501)
-        store.updateResolvedModel(.cs7501)
+        store.updateSelectedModel("CS7501")
+        store.updateResolvedModel("CS7501")
         store.updateSessionState(.ready)
         store.updateRecentFailure("last failure")
 
@@ -25,25 +45,14 @@ final class DemoDiagnosticsTests: XCTestCase {
         XCTAssertTrue(store.summaryText().contains("最近失败: last failure"))
     }
 
-    func testSessionCommandRunnerReportsBusyWithoutRunningOperation() {
-        var executingValues: [Bool] = []
-        var busyCount = 0
-        var ranOperation = false
-        let runner = SessionCommandRunner(
-            setExecuting: { executingValues.append($0) },
-            onBusy: { busyCount += 1 }
-        )
+    func testMissingStringFallbackDoesNotExposeRawKey() {
+        let localization = DemoLocalization.shared
+        let originalLanguage = localization.language
+        defer { localization.language = originalLanguage }
 
-        runner.execute(
-            isExecuting: true,
-            operation: {
-                ranOperation = true
-            },
-            onFailure: { _ in }
-        )
+        localization.language = .en
 
-        XCTAssertEqual(busyCount, 1)
-        XCTAssertFalse(ranOperation)
-        XCTAssertTrue(executingValues.isEmpty)
+        XCTAssertEqual(DemoStrings.tr("sdk_log_missing_translation"), "SDK Log Missing Translation")
     }
+
 }

@@ -2,6 +2,20 @@ import XCTest
 @testable import ScannerSDKiOSDemo
 
 final class AppLogSupportTests: XCTestCase {
+    func testRedactsDeviceIdentifiers() {
+        let message = redactDemoLogMessage(
+            "deviceId=AA:BB:CC:DD:EE:FF serial=SN123456 " +
+                "123E4567-E89B-12D3-A456-426614174000 " +
+                "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
+        )
+
+        XCTAssertFalse(message.contains("AA:BB:CC:DD:EE:FF"))
+        XCTAssertFalse(message.contains("SN123456"))
+        XCTAssertFalse(message.contains("123E4567-E89B-12D3-A456-426614174000"))
+        XCTAssertFalse(message.contains("AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"))
+        XCTAssertTrue(message.contains("<redacted>"))
+    }
+
     private var originalLanguage: DemoLanguage!
 
     override func setUp() {
@@ -46,7 +60,23 @@ final class AppLogSupportTests: XCTestCase {
 
         XCTAssertEqual(event.source, .sdk)
         XCTAssertEqual(event.level, .warn)
-        XCTAssertEqual(event.message, "session[42] 模组能力未就绪: family=se4750, moduleCommands=false")
+        XCTAssertEqual(event.message, "session[42] 设置能力未就绪: family=se4750, moduleCommands=false")
+    }
+
+    func testMakeSdkConsoleEventSeparatesCoreLogs() {
+        let event = makeSdkConsoleEvent("core: ScannerSession: binary ack received")
+
+        XCTAssertEqual(event.source, .core)
+        XCTAssertEqual(event.level, .debug)
+        XCTAssertEqual(event.message, "Core 日志: ScannerSession: binary ack received")
+    }
+
+    func testMakeSdkConsoleEventSeparatesBleLogs() {
+        let event = makeSdkConsoleEvent("BLE didDiscoverServices failed device=ABC error=timeout")
+
+        XCTAssertEqual(event.source, .ble)
+        XCTAssertEqual(event.level, .error)
+        XCTAssertEqual(event.message, "BLE didDiscoverServices failed device=ABC error=timeout")
     }
 
     func testMakeSdkConsoleEventMapsProbeFailureToWarn() {

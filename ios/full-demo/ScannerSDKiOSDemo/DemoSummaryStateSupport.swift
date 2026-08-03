@@ -37,17 +37,25 @@ enum DemoDeviceSummarySource: Equatable {
 
 enum DemoInfoSummarySource: Equatable {
     case notLoaded
-    case info(firmwareVersion: String, hardwareVersion: String, versionSeriesCode: String)
+    case info(
+        firmwareVersion: String,
+        hardwareVersion: String,
+        versionSeriesCode: String,
+        bluetoothName: String,
+        bluetoothFirmwareVersion: String
+    )
     case value(String)
 
     var text: String {
         switch self {
         case .notLoaded:
             return DemoStrings.tr("device_info_not_loaded")
-        case .info(let firmwareVersion, let hardwareVersion, let versionSeriesCode):
+        case .info(let firmwareVersion, let hardwareVersion, let versionSeriesCode, let bluetoothName, let bluetoothFirmwareVersion):
             return "\(DemoStrings.tr("firmware"))=\(blankFallback(firmwareVersion))  " +
                 "\(DemoStrings.tr("hardware"))=\(blankFallback(hardwareVersion))  " +
-                "\(DemoStrings.tr("series_code"))=\(blankFallback(versionSeriesCode))"
+                "\(DemoStrings.tr("series_code"))=\(blankFallback(versionSeriesCode))  " +
+                "\(DemoStrings.tr("bluetooth_name"))=\(blankFallback(bluetoothName))  " +
+                "\(DemoStrings.tr("bluetooth_firmware_version"))=\(blankFallback(bluetoothFirmwareVersion))"
         case .value(let value):
             return value
         }
@@ -60,55 +68,18 @@ enum DemoInfoSummarySource: Equatable {
 
 enum DemoSdkResolvedModelSummarySource: Equatable {
     case notLoaded
-    case resolved(selectedModelId: DeviceModelId, resolvedModel: DeviceModelId)
+    case resolved(selectedModelKey: String, resolvedModel: String)
     case value(String)
 
     var text: String {
         switch self {
         case .notLoaded:
             return DemoStrings.tr("sdk_resolved_model_not_loaded")
-        case .resolved(let selectedModelId, let resolvedModel):
+        case .resolved(let selectedModelKey, let resolvedModel):
             return formatSdkResolvedModelSummary(
-                selectedModelId: selectedModelId,
+                selectedModelKey: selectedModelKey,
                 resolvedModel: resolvedModel
             )
-        case .value(let value):
-            return value
-        }
-    }
-}
-
-enum DemoCapabilitySummarySource {
-    case notLoaded
-    case loaded
-    case capability(DeviceCapabilitySummary)
-    case value(String)
-
-    var text: String {
-        switch self {
-        case .notLoaded:
-            return DemoStrings.tr("capability_summary_not_loaded")
-        case .loaded:
-            return DemoStrings.tr("capability_summary_loaded")
-        case .capability(let capability):
-            return formatCapabilitySummary(capability)
-        case .value(let value):
-            return value
-        }
-    }
-}
-
-enum DemoModuleSummarySource {
-    case notLoaded
-    case capability(DeviceCapabilitySummary)
-    case value(String)
-
-    var text: String {
-        switch self {
-        case .notLoaded:
-            return DemoStrings.tr("module_capability_not_loaded")
-        case .capability(let capability):
-            return formatModuleSummary(capability)
         case .value(let value):
             return value
         }

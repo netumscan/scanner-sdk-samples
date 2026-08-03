@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -22,12 +24,189 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.netumscan.scannersdk.demo.ui.theme.DemoColors
 import com.netumscan.scannersdk.demo.ui.theme.DemoShapes
+
+@Composable
+internal fun ScanWorkspaceCard(
+    vm: CommandConsoleViewModel,
+    uiState: CommandConsoleUiState,
+    dataRuleState: DataRuleConsoleSectionState,
+    dataRuleActions: DataRuleConsoleSectionActions,
+) {
+    val canExecute = uiState.hasReadySession && !uiState.isExecuting
+    DemoSectionCard(title = demoStringResource(R.string.scan_workspace)) {
+        ConsoleStatusGridRow(
+            leftLabel = demoStringResource(R.string.scan_session),
+            leftValue = uiState.statusSummary.asString(),
+            rightLabel = demoStringResource(R.string.scan_count),
+            rightValue = uiState.scanCount.toString(),
+        )
+        ConsoleStatusChip(
+            modifier = Modifier.fillMaxWidth(),
+            label = demoStringResource(R.string.bluetooth_firmware_version),
+            value = uiState.bluetoothFirmwareVersionSummary.asString(),
+        )
+
+        LastScanPanel(
+            text = uiState.lastScanText ?: demoStringResource(R.string.last_scan_empty),
+            meta = uiState.lastScanMeta.asString(),
+            rawHex = uiState.lastScanRawHex.ifBlank { demoStringResource(R.string.last_scan_raw_empty) },
+        )
+
+        Button(
+            onClick = vm::triggerScan,
+            enabled = canExecute,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DemoColors.SurfaceBrand,
+                contentColor = Color.White,
+            ),
+        ) {
+            Text(
+                text = demoStringResource(R.string.trigger_scan_action),
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        CommandButtonRow(
+            actions = listOf(
+                commandButtonAction(
+                    label = demoStringResource(R.string.load_device_info_action),
+                    enabled = canExecute,
+                    action = vm::requestInfo,
+                ),
+                commandButtonAction(
+                    label = demoStringResource(R.string.load_battery_info_action),
+                    enabled = canExecute,
+                    action = vm::requestBatteryLevel,
+                ),
+                commandButtonAction(
+                    label = demoStringResource(R.string.read_bluetooth_firmware_version_action),
+                    enabled = canExecute,
+                    action = vm::readBluetoothFirmwareVersion,
+                ),
+                commandButtonAction(
+                    label = demoStringResource(R.string.load_memory_usage_action),
+                    enabled = canExecute,
+                    action = vm::requestStorageUsage,
+                ),
+                commandButtonAction(
+                    label = demoStringResource(R.string.disconnect),
+                    enabled = !uiState.isExecuting,
+                    isDangerous = true,
+                    action = vm::disconnect,
+                ),
+            )
+        )
+
+        LocalParseControlsCard(
+            vm = vm,
+            state = dataRuleState,
+            actions = dataRuleActions,
+        )
+    }
+}
+
+@Composable
+private fun LastScanPanel(
+    text: String,
+    meta: String,
+    rawHex: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = DemoShapes.panel,
+        colors = CardDefaults.cardColors(containerColor = DemoColors.SurfaceMuted),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = demoStringResource(R.string.last_scan),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = DemoColors.TextPrimary,
+            )
+            Text(
+                text = text,
+                modifier = Modifier.heightIn(min = 34.dp),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 24.sp,
+                color = DemoColors.TextPrimary,
+            )
+            Text(text = meta, fontSize = 12.sp, color = DemoColors.TextSecondary)
+            Text(
+                text = "${demoStringResource(R.string.raw_hex)}: $rawHex",
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                fontFamily = FontFamily.Monospace,
+                color = DemoColors.TextTertiary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocalParseControlsCard(
+    vm: CommandConsoleViewModel,
+    state: DataRuleConsoleSectionState,
+    actions: DataRuleConsoleSectionActions,
+) {
+    CollapsibleGroupedCommandCard(
+        title = demoStringResource(R.string.local_parse_controls),
+        summary = "${demoStringResource(R.string.local_charset)} ${state.scanCharsetSummary} / " +
+            "${demoStringResource(R.string.local_terminator)} ${state.scanTerminatorSummary}",
+        danger = false,
+        expanded = state.parseStateExpanded,
+        onToggle = { actions.onParseStateExpandedChange(!state.parseStateExpanded) },
+        headerTestTag = DemoTestTags.CONSOLE_SECTION_PARSE_ADVANCED,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = { vm.readDeviceCharsetSetting() },
+                enabled = state.canExecuteMasterCommands,
+                modifier = Modifier.fillMaxWidth(),
+                border = androidx.compose.foundation.BorderStroke(1.dp, DemoColors.Outline),
+            ) {
+                Text(demoStringResource(R.string.read_charset_only))
+            }
+            Text(
+                text = "${demoStringResource(R.string.device_charset)}: ${state.deviceCharsetSummary.asString()}",
+                fontSize = 13.sp,
+                color = DemoColors.TextSecondary,
+            )
+            Text(
+                text = "${demoStringResource(R.string.local_charset)}: ${state.scanCharsetSummary}",
+                fontSize = 13.sp,
+                color = DemoColors.TextSecondary,
+            )
+            CharsetSelectorRow(
+                selected = state.scanCharsetSummary,
+                enabled = state.canExecuteMasterCommands,
+                onSelect = { vm.setScanTextCharset(it) },
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "${demoStringResource(R.string.local_terminator)}: ${state.scanTerminatorSummary}",
+                fontSize = 13.sp,
+                color = DemoColors.TextSecondary,
+            )
+            TerminatorSelectorRow(
+                selected = state.scanTerminatorSummary,
+                enabled = state.canExecuteMasterCommands,
+                onSelect = { vm.setScanTextTerminator(it.bytes) },
+            )
+        }
+    }
+}
 
 @Composable
 internal fun ExpandableSectionHeader(
@@ -195,6 +374,7 @@ internal fun ConsoleStatusCard(
     selectedModelSummary: String,
     sdkResolvedModelSummary: String,
     capabilitySummary: String,
+    initializationSummary: String,
     diagnosticsSummary: String,
     lastActionResult: String?,
     errorMessage: String?,
@@ -227,11 +407,6 @@ internal fun ConsoleStatusCard(
                         fontWeight = FontWeight.SemiBold,
                         color = DemoColors.TextPrimary,
                     )
-                    Text(
-                        text = DemoStrings.text(R.string.connection_model_capability_summary),
-                        fontSize = 11.sp,
-                        color = DemoColors.TextSecondary,
-                    )
                 }
                 OutlinedButton(
                     onClick = onDisconnect,
@@ -255,14 +430,32 @@ internal fun ConsoleStatusCard(
 
             ConsoleStatusChip(
                 modifier = Modifier.fillMaxWidth(),
-                label = DemoStrings.text(R.string.device_selected_model),
-                value = "$deviceSummary\n$selectedModelSummary",
+                label = DemoStrings.text(R.string.device),
+                value = deviceSummary,
             )
 
             ConsoleStatusChip(
                 modifier = Modifier.fillMaxWidth(),
-                label = DemoStrings.text(R.string.capability_sdk_resolved),
-                value = "$capabilitySummary\n$sdkResolvedModelSummary",
+                label = DemoStrings.text(R.string.customer_selected_model),
+                value = selectedModelSummary,
+            )
+
+            ConsoleStatusChip(
+                modifier = Modifier.fillMaxWidth(),
+                label = DemoStrings.text(R.string.sdk_resolved_model),
+                value = sdkResolvedModelSummary,
+            )
+
+            ConsoleStatusChip(
+                modifier = Modifier.fillMaxWidth(),
+                label = DemoStrings.text(R.string.capability_summary),
+                value = capabilitySummary,
+            )
+
+            ConsoleStatusChip(
+                modifier = Modifier.fillMaxWidth(),
+                label = DemoStrings.text(R.string.session_initialization_status),
+                value = initializationSummary,
             )
 
             ConsoleStatusChip(
@@ -293,6 +486,30 @@ private fun ConsoleStatusChip(
     )
 }
 
+@Composable
+private fun ConsoleStatusGridRow(
+    leftLabel: String,
+    leftValue: String,
+    rightLabel: String,
+    rightValue: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ConsoleStatusChip(
+            label = leftLabel,
+            value = leftValue,
+            modifier = Modifier.weight(1f),
+        )
+        ConsoleStatusChip(
+            label = rightLabel,
+            value = rightValue,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
 internal data class CommandButtonAction(
     val label: String,
     val enabled: Boolean,
@@ -318,33 +535,43 @@ internal fun CommandButtonRow(
     actions: List<CommandButtonAction>,
     testTagForLabel: (String) -> String? = { null },
 ) {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        actions.forEach { buttonAction ->
-            if (buttonAction.isDangerous) {
-                Button(
-                    onClick = buttonAction.action,
-                    enabled = buttonAction.enabled,
-                    modifier = Modifier.weight(1f).demoTestTag(testTagForLabel(buttonAction.label)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DemoColors.SurfaceDanger,
-                        contentColor = DemoColors.Danger,
-                        disabledContainerColor = DemoColors.SurfaceDanger.copy(alpha = 0.55f),
-                        disabledContentColor = DemoColors.Danger.copy(alpha = 0.6f),
-                    ),
-                ) {
-                    Text(buttonAction.label)
+        actions.chunked(2).forEach { rowActions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowActions.forEach { buttonAction ->
+                    if (buttonAction.isDangerous) {
+                        Button(
+                            onClick = buttonAction.action,
+                            enabled = buttonAction.enabled,
+                            modifier = Modifier.weight(1f).demoTestTag(testTagForLabel(buttonAction.label)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DemoColors.SurfaceDanger,
+                                contentColor = DemoColors.Danger,
+                                disabledContainerColor = DemoColors.SurfaceDanger.copy(alpha = 0.55f),
+                                disabledContentColor = DemoColors.Danger.copy(alpha = 0.6f),
+                            ),
+                        ) {
+                            Text(buttonAction.label, textAlign = TextAlign.Center)
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = buttonAction.action,
+                            enabled = buttonAction.enabled,
+                            modifier = Modifier.weight(1f).demoTestTag(testTagForLabel(buttonAction.label)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, DemoColors.Outline),
+                        ) {
+                            Text(buttonAction.label, textAlign = TextAlign.Center)
+                        }
+                    }
                 }
-            } else {
-                OutlinedButton(
-                    onClick = buttonAction.action,
-                    enabled = buttonAction.enabled,
-                    modifier = Modifier.weight(1f).demoTestTag(testTagForLabel(buttonAction.label)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, DemoColors.Outline),
-                ) {
-                    Text(buttonAction.label, textAlign = TextAlign.Center)
+                if (rowActions.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -404,7 +631,7 @@ internal fun <T> CommandGrid(
                                 disabledContentColor = DemoColors.Danger.copy(alpha = 0.6f),
                             ),
                         ) {
-                            Text("! $label")
+                            Text("! $label", textAlign = TextAlign.Center)
                         }
                     } else {
                         OutlinedButton(

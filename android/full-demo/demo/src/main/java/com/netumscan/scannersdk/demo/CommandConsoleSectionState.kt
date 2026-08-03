@@ -1,79 +1,50 @@
 package com.netumscan.scannersdk.demo
 
-import com.netumscan.scannersdk.model.ModuleFamily
-import com.netumscan.scannersdk.model.Ntc06hSettingDefinition
+import com.netumscan.scannersdk.model.CapabilityEntry
 
 internal data class MasterConsoleSectionState(
     val isExecuting: Boolean,
     val canExecuteMasterCommands: Boolean,
     val quickActionsExpanded: Boolean,
-    val commandsExpanded: Boolean,
+    val capabilityActionsExpanded: Boolean,
     val quickActionCount: Int,
     val quickActionRows: List<CommandGroup<QuickActionCommand>>,
-    val selectedMasterTab: Int,
-    val masterTabItems: List<CommandGroup<ConsoleCommand>>,
-    val selectedMasterTabItem: CommandGroup<ConsoleCommand>?,
-    val selectedTabSections: List<CommandGroup<ConsoleCommand>>,
-    val selectedMasterCommandCount: Int,
+    val actionCapabilityEntries: List<CapabilityEntry>,
 )
 
 internal data class MasterConsoleSectionActions(
     val onQuickActionsExpandedChange: (Boolean) -> Unit,
     val onPendingQuickActionChange: (QuickActionCommand?) -> Unit,
-    val onCommandsExpandedChange: (Boolean) -> Unit,
-    val onSelectedMasterTabChange: (Int) -> Unit,
-    val onPendingCommandChange: (ConsoleCommand?) -> Unit,
+    val onCapabilityActionsExpandedChange: (Boolean) -> Unit,
+    val onPendingCapabilityActionChange: (CapabilityEntry?) -> Unit,
 )
 
-internal data class ModuleConsoleSectionState(
-    val activeModuleFamily: ModuleFamily,
-    val moduleSettingsExpanded: Boolean,
-    val isNtc06hFamily: Boolean,
+internal data class ProductSettingsSectionState(
     val isExecuting: Boolean,
-    val supportsModuleCommands: Boolean,
-    val canExecuteModuleCommands: Boolean,
-    val moduleSummary: String,
-    val ntc06hSettings: List<Ntc06hSettingDefinition>,
-    val ntc06hDomainGroups: List<Ntc06hUiDomainGroup>,
-    val modulePresets: List<ModuleSettingPreset>,
-    val moduleDomainGroups: List<ModuleDomainGroup>,
-    val modulePresetIndexById: Map<Int, Int>,
-    val ntc06hSettingIndexByKey: Map<String, Int>,
-    val selectedModulePreset: ModuleSettingPreset?,
-    val selectedNtc06hSetting: Ntc06hSettingDefinition?,
-    val selectedModulePresetIndex: Int,
-    val selectedNtc06hSettingIndex: Int,
-    val moduleSelectedTab: Int,
-    val expandedModuleFamilyKey: String?,
-    val inlineCustomPresetId: Int?,
-    val inlineNtc06hSettingKey: String?,
-    val moduleParameterIdText: String,
-    val modulePayloadHexText: String,
-    val modulePersistWrite: Boolean,
-    val ntc06hCustomCode: String,
-    val ntc06hTemplateHexValue: String,
-    val ntc06hSaveAfterWrite: Boolean,
+    val isLoadingSettings: Boolean,
+    val hasReadySession: Boolean,
+    val settingsReadSupported: Boolean,
+    val settingsWriteSupported: Boolean,
+    val settingDefinitions: List<CapabilityEntry>,
+    val settingOptionsByKey: Map<String, List<ProductSettingOption>>,
+    val settingGroups: List<ProductSettingGroup>,
+    val capabilityReadValues: Map<String, com.netumscan.scannersdk.model.CapabilityValue>,
+    val settingDrafts: Map<String, ProductSettingDraft>,
+    val settingOperations: Map<String, ProductSettingOperation>,
+    val settingValidationErrors: Map<String, String>,
+    val settingRecentlyUpdatedKeys: Set<String>,
 )
 
-internal data class ModuleConsoleSectionActions(
-    val onModuleSettingsExpandedChange: (Boolean) -> Unit,
-    val onModuleSelectedTabChange: (Int) -> Unit,
-    val onExpandedModuleFamilyKeyChange: (String?) -> Unit,
-    val onInlineCustomPresetIdChange: (Int?) -> Unit,
-    val onInlineNtc06hSettingKeyChange: (String?) -> Unit,
-    val onSelectedModulePresetIndexChange: (Int) -> Unit,
-    val onSelectedNtc06hSettingIndexChange: (Int) -> Unit,
-    val onModuleParameterIdTextChange: (String) -> Unit,
-    val onModulePayloadHexTextChange: (String) -> Unit,
-    val onModulePersistWriteToggle: () -> Unit,
-    val onNtc06hCustomCodeChange: (String) -> Unit,
-    val onNtc06hTemplateHexValueChange: (String) -> Unit,
-    val onNtc06hSaveAfterWriteToggle: () -> Unit,
-)
+internal enum class ProductSettingOperation {
+    READING,
+    WRITING,
+}
 
 internal data class DataRuleConsoleSectionState(
     val isExecuting: Boolean,
     val canExecuteMasterCommands: Boolean,
+    val dataRulesSupported: Boolean,
+    val deviceCharsetSummary: UiText,
     val scanCharsetSummary: String,
     val scanTerminatorSummary: String,
     val parseStateExpanded: Boolean,

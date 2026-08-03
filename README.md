@@ -1,27 +1,42 @@
 # scanner-sdk-samples
 
-Public sample apps for Netum Scanner SDK.
+Public source samples for Netum Scanner SDK `1.0.0`.
 
-This repository is intentionally split into two layers:
-
-- `quick-start`: minimal apps that show the shortest working path: initialize SDK, discover a scanner, connect, receive scan text, and disconnect.
-- `full-demo`: long-lived demo apps copied from the private development repository and adapted to consume the public SDK distribution.
+The applications in this repository consume released SDK binaries. They do not
+build the SDK from source or require a local SDK checkout.
 
 ## Samples
 
-| Platform | Quick start | Full demo |
+| Platform | Quick Start | Full Demo |
 | --- | --- | --- |
 | Android | [android/quick-start](android/quick-start) | [android/full-demo](android/full-demo) |
 | iOS | [ios/quick-start](ios/quick-start) | [ios/full-demo](ios/full-demo) |
 
-## SDK packages
+Start with a Quick Start for the smallest BLE GATT integration. Use a Full Demo
+for command coverage, diagnostics, localization, recovery flows, and
+Compatibility Record generation.
 
-- Android: `com.netumscan:scanner-sdk-android:0.1.3`
-- iOS SwiftPM: `https://github.com/netumscan/scanner-sdk-ios.git`, from `0.1.3`
+## Online SDK dependencies
 
-Release readiness notes:
+- Android: `com.netumscan:scanner-sdk-android:1.0.0` from Maven Central.
+- iOS: `https://github.com/netumscan/scanner-sdk-ios.git`, from `1.0.0`.
+  The Swift package resolves the versioned binary XCFramework.
 
-- Android samples consume `com.netumscan:scanner-sdk-android:0.1.3` from public repositories. They do not use `mavenLocal()` in release validation.
-- iOS samples consume the public SwiftPM repository from version `0.1.3`.
+The samples do not use `mavenLocal()`, a local Android SDK project, a local
+SwiftPM path, or a SwiftPM revision pin.
 
-Use `quick-start` first when validating a fresh integration. Use `full-demo` when you need a more complete reference for permissions, discovery, connection lifecycle, command console behavior, logs, diagnostics, and model-specific capabilities.
+## Distribution boundary
+
+This repository distributes source examples only. Debug and unsigned Release
+builds are validation outputs. No APK, AAB, IPA, TestFlight build, or app-store
+package is published here.
+
+## Platform guides
+
+- [Android samples](android/README.md)
+- [iOS samples](ios/README.md)
+
+## Support
+
+Report sample integration problems in
+[scanner-sdk-samples Issues](https://github.com/netumscan/scanner-sdk-samples/issues).

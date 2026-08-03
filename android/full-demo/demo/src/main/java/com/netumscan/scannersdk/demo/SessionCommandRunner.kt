@@ -2,7 +2,6 @@ package com.netumscan.scannersdk.demo
 
 import com.netumscan.scannersdk.ScannerSession
 import com.netumscan.scannersdk.SessionState
-import com.netumscan.scannersdk.model.MasterCommand
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,28 +55,11 @@ internal class SessionCommandRunner(
         onUnsupported: (String, String) -> Unit,
     ): Boolean {
         val supported = withContext(Dispatchers.IO) {
-            session.getOperationSupportSummary().supports(operation)
+            session.getOperationSupport().supports(operation)
         }
         if (supported) return true
         val label = labelProvider()
         val reason = unsupportedReasonProvider(operation)
-        onUnsupported(label, reason)
-        return false
-    }
-
-    suspend fun ensureMasterCommandSupport(
-        session: ScannerSession,
-        command: MasterCommand,
-        labelProvider: () -> String,
-        unsupportedReasonProvider: () -> String,
-        onUnsupported: (String, String) -> Unit,
-    ): Boolean {
-        val supported = withContext(Dispatchers.IO) {
-            session.canExecuteMasterCommand(command)
-        }
-        if (supported) return true
-        val label = labelProvider()
-        val reason = unsupportedReasonProvider()
         onUnsupported(label, reason)
         return false
     }

@@ -1,7 +1,6 @@
 package com.netumscan.scannersdk.demo
 
 import com.netumscan.scannersdk.SessionState
-import com.netumscan.scannersdk.model.DeviceModelId
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -10,7 +9,10 @@ class DemoCompatibilityRecordTest {
     fun recordIncludesPlatformTransportModelSessionAndFakeMode() {
         DemoDiagnosticsStore.updatePlatform(
             DemoPlatformDiagnostics(
-                demoVersion = "0.1.3",
+                demoVersion = "1.0.0",
+                demoBuild = "12",
+                sdkVersion = "1.0.0",
+                sdkCommit = "4989fda4",
                 androidVersion = "Android 15",
                 bluetoothEnabled = true,
                 locationEnabled = true,
@@ -20,8 +22,8 @@ class DemoCompatibilityRecordTest {
             )
         )
         DemoDiagnosticsStore.updateTransport(DemoTransportMode.SPP)
-        DemoDiagnosticsStore.updateSelectedModel(DeviceModelId.CS7501)
-        DemoDiagnosticsStore.updateResolvedModel(DeviceModelId.CS7501)
+        DemoDiagnosticsStore.updateSelectedModel("CS7501")
+        DemoDiagnosticsStore.updateResolvedModel("CS7501")
         DemoDiagnosticsStore.updateSessionState(SessionState.READY)
         DemoDiagnosticsStore.updateRecentFailure("none")
         DemoDiagnosticsStore.updateFakeMode(true)
@@ -29,6 +31,9 @@ class DemoCompatibilityRecordTest {
         val record = DemoCompatibilityRecord.format()
 
         assertTrue(record.contains("platform=Android"))
+        assertTrue(record.contains("demoBuild=12"))
+        assertTrue(record.contains("sdkVersion=1.0.0"))
+        assertTrue(record.contains("sdkCommit=4989fda4"))
         assertTrue(record.contains("transport=SPP"))
         assertTrue(record.contains("selectedModel=CS7501"))
         assertTrue(record.contains("sessionState=READY"))

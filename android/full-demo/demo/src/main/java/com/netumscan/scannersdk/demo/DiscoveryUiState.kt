@@ -1,8 +1,6 @@
 package com.netumscan.scannersdk.demo
 
-import com.netumscan.scannersdk.ProtocolChannelKind
 import com.netumscan.scannersdk.model.DiscoveredDevice
-import com.netumscan.scannersdk.model.DeviceModelId
 
 enum class DiscoveryBlockerAction {
     OPEN_APP_SETTINGS,
@@ -13,12 +11,13 @@ enum class DiscoveryBlockerAction {
 data class DiscoveryUiState(
     val statusSummary: UiText = uiText(R.string.sdk_not_initialized),
     val selectedDeviceSummary: UiText = uiText(R.string.no_connected_device),
-    val selectedModelId: DeviceModelId = DeviceModelId.CS7501,
+    val selectedModelKey: String = "CS7501",
     val selectedModelSummary: UiText = rawDisplayText("CS7501"),
+    val supportedModels: List<DemoSupportedModel> = emptyList(),
+    val isLoadingSupportedModels: Boolean = false,
+    val supportedModelsError: UiText? = null,
     val selectedTransportMode: DemoTransportMode? = null,
     val selectedTransportSummary: UiText = uiText(R.string.transport_not_selected),
-    val selectedChannelKind: ProtocolChannelKind = ProtocolChannelKind.SCANNER_MASTER,
-    val channelKindSummary: UiText = uiText(R.string.scanner_master_protocol),
     val diagnosticsSummary: UiText = DemoDiagnosticsStore.summaryText(),
     val devices: List<DiscoveredDevice> = emptyList(),
     val events: List<DebugEvent> = emptyList(),
@@ -38,7 +37,13 @@ data class DiscoveryUiState(
         get() = !isConnecting && !hasActiveSession
 
     val canStartDiscovery: Boolean
-        get() = isInitialized && selectedTransportMode != null && !isDiscovering && canChangeDiscoveryTarget
+        get() = isInitialized &&
+            selectedTransportMode != null &&
+            supportedModels.any { it.modelKey == selectedModelKey } &&
+            !isLoadingSupportedModels &&
+            supportedModelsError == null &&
+            !isDiscovering &&
+            canChangeDiscoveryTarget
 
     val canStopDiscovery: Boolean
         get() = isInitialized && isDiscovering

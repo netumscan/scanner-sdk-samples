@@ -4,35 +4,58 @@ options:
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    from: 0.1.3
+    from: "1.0.0"
 targets:
   ScannerSDKiOSDemo:
     type: application
     platform: iOS
     deploymentTarget: "16.0"
     sources:
-      - path: ScannerSDKiOSDemo
+      - path: ScannerSDKiOSDemo/ScannerSDKiOSDemoApp.swift
+      - path: ScannerSDKiOSDemo/ContentView.swift
+      - path: ScannerSDKiOSDemo/AppViewModel.swift
+      - path: ScannerSDKiOSDemo/DemoSupportedModel.swift
+      - path: ScannerSDKiOSDemo/CapabilityCatalogSupport.swift
+      - path: ScannerSDKiOSDemo/CachedCommandSuccessStateLoader.swift
+      - path: ScannerSDKiOSDemo/CachedDeviceStateSummaryLoader.swift
+      - path: ScannerSDKiOSDemo/DiscoveryPageView.swift
+      - path: ScannerSDKiOSDemo/ConsolePageView.swift
+      - path: ScannerSDKiOSDemo/ConsoleFormControls.swift
+      - path: ScannerSDKiOSDemo/AppLogsPageView.swift
+      - path: ScannerSDKiOSDemo/DemoAccessibility.swift
+      - path: ScannerSDKiOSDemo/DemoCompatibilityRecord.swift
+      - path: ScannerSDKiOSDemo/DemoDataRuleSupport.swift
+      - path: ScannerSDKiOSDemo/DemoDeviceSupport.swift
+      - path: ScannerSDKiOSDemo/DemoDiagnosticsStore.swift
+      - path: ScannerSDKiOSDemo/DemoLocalizationSupport.swift
+      - path: ScannerSDKiOSDemo/DemoLogSupport.swift
+      - path: ScannerSDKiOSDemo/DemoRecoveryAction.swift
+      - path: ScannerSDKiOSDemo/DemoScenarioPreset.swift
+      - path: ScannerSDKiOSDemo/DemoScenarioPresetView.swift
+      - path: ScannerSDKiOSDemo/DemoStringSupport.swift
+      - path: ScannerSDKiOSDemo/DemoSupport.swift
+      - path: ScannerSDKiOSDemo/DemoSummaryStateSupport.swift
+      - path: ScannerSDKiOSDemo/DemoToolbarViews.swift
+      - path: ScannerSDKiOSDemo/DeviceStateSummaryFormatter.swift
+      - path: ScannerSDKiOSDemo/en.lproj/Localizable.strings
+        buildPhase: resources
+      - path: ScannerSDKiOSDemo/zh-Hans.lproj/Localizable.strings
+        buildPhase: resources
+      - path: ScannerSDKiOSDemo/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.demo.ios
         PRODUCT_NAME: ScannerSDKiOSDemo
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 12
+        NSDK_SDK_COMMIT: local-dev
         SWIFT_VERSION: "5.9"
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: 用于连接扫描枪设备并接收扫码数据
-        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: 用于连接扫描枪设备并接收扫码数据
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: ScannerSDKiOSDemo/Info.plist
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: P39CNFXL54
     dependencies:
       - package: ScannerSDK
         product: ScannerSDK
@@ -45,26 +68,19 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.demo.ios.tests
-        PRODUCT_NAME: ScannerSDKiOSDemoTests
-        SWIFT_VERSION: "5.9"
-        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"
     dependencies:
       - target: ScannerSDKiOSDemo
       - package: ScannerSDK
         product: ScannerSDK
-  ScannerSDKiOSDemoUITests:
-    type: bundle.ui-testing
-    platform: iOS
-    deploymentTarget: "16.0"
-    sources:
-      - path: ScannerSDKiOSDemoUITests
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.demo.ios.uitests
-        PRODUCT_NAME: ScannerSDKiOSDemoUITests
-        SWIFT_VERSION: "5.9"
-        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
-        GENERATE_INFOPLIST_FILE: YES
-    dependencies:
-      - target: ScannerSDKiOSDemo
+schemes:
+  ScannerSDKiOSDemo:
+    build:
+      targets:
+        ScannerSDKiOSDemo: all
+        ScannerSDKiOSDemoTests:
+          - test
+    test:
+      targets:
+        - ScannerSDKiOSDemoTests

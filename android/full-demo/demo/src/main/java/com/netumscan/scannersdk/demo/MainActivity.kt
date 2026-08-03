@@ -53,8 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.netumscan.scannersdk.ScannerSdk
 import com.netumscan.scannersdk.localizedLabel
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import com.netumscan.scannersdk.demo.ui.theme.DemoColors
 import com.netumscan.scannersdk.demo.ui.theme.DemoShapes
@@ -66,20 +66,23 @@ internal fun discoveryPermissionsForSdk(
 ): Array<String> {
     return when (mode) {
         DemoTransportMode.BLE -> if (sdkInt >= Build.VERSION_CODES.S) {
-            // Some Android 12+ ROMs still gate BLE scan callbacks behind location permission.
+            // NE2210/Android 16 suppresses discovery callbacks without location permission.
+            // Android 12+ requires coarse and fine location to be requested together.
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )
         } else {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         }
         DemoTransportMode.SPP -> if (sdkInt >= Build.VERSION_CODES.S) {
-            // Some Android 12+ ROMs also gate Classic Bluetooth discovery behind location permission.
+            // Keep the same ROM compatibility contract for Classic discovery.
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )
         } else {
@@ -122,7 +125,10 @@ class MainActivity : ComponentActivity() {
             vm.reportDiscoveryPermissionsDenied(
                 deniedPermissions = deniedPermissions,
                 includeAndroid12LocationNote = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    deniedPermissions.contains(Manifest.permission.ACCESS_FINE_LOCATION),
+                    deniedPermissions.any {
+                        it == Manifest.permission.ACCESS_COARSE_LOCATION ||
+                            it == Manifest.permission.ACCESS_FINE_LOCATION
+                    },
             )
         }
     }
@@ -228,6 +234,9 @@ class MainActivity : ComponentActivity() {
         vm.updatePlatformDiagnostics(
             DemoPlatformDiagnostics(
                 demoVersion = demoVersionName(),
+                demoBuild = BuildConfig.VERSION_CODE.toString(),
+                sdkVersion = runCatching { ScannerSdk.version }.getOrDefault("-"),
+                sdkCommit = BuildConfig.SDK_COMMIT,
                 androidVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                 bluetoothEnabled = bluetoothEnabled(),
                 locationEnabled = isLocationEnabled(),
@@ -334,6 +343,7 @@ private fun MainRoute(
                         onDisconnect = onDisconnect,
                         onOpenActiveConsole = onOpenActiveConsole,
                         onSelectModel = vm::setSelectedModel,
+                        onRetrySupportedModels = vm::retrySupportedModels,
                     )
                 }
                 item {
@@ -361,31 +371,14 @@ internal fun DiscoveryWorkspaceCard(
     onOpenBluetoothSettings: () -> Unit,
     onDisconnect: () -> Unit,
     onOpenActiveConsole: () -> Unit,
-    onSelectModel: (DeviceModelId) -> Unit,
+    onSelectModel: (String) -> Unit,
+    onRetrySupportedModels: () -> Unit,
 ) {
-    val statusSummary = uiState.statusSummary.asString()
-    val selectedTransportSummary = uiState.selectedTransportSummary.asString()
-    val selectedDeviceSummary = uiState.selectedDeviceSummary.asString()
     val selectedModelSummary = uiState.selectedModelSummary.asString()
-    val diagnosticsSummary = uiState.diagnosticsSummary.asString()
     val lastActionResult = uiState.lastActionResult?.asString()
     val errorMessage = uiState.errorMessage?.asString()
 
     DemoSectionCard(title = demoStringResource(R.string.discovery_controls)) {
-        OverviewMetricGrid(
-            items = listOf(
-                demoStringResource(R.string.status) to statusSummary,
-                demoStringResource(R.string.transport_mode) to selectedTransportSummary,
-                demoStringResource(R.string.selected_device) to selectedDeviceSummary,
-                demoStringResource(R.string.selected_model) to selectedModelSummary,
-                demoStringResource(R.string.discovered_devices) to uiState.devices.size.toString(),
-                demoStringResource(R.string.diagnostics) to diagnosticsSummary,
-            )
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-        DemoScenarioPresetCard()
-
         lastActionResult?.let {
             Spacer(modifier = Modifier.height(10.dp))
             DemoFeedbackBanner(
@@ -445,10 +438,17 @@ internal fun DiscoveryWorkspaceCard(
                     .fillMaxWidth()
                     .demoTestTag(DemoTestTags.DISCOVERY_MODEL_BUTTON),
                 border = BorderStroke(1.dp, DemoColors.Outline),
-                enabled = uiState.canChangeDiscoveryTarget,
+                enabled = uiState.canChangeDiscoveryTarget &&
+                    uiState.selectedTransportMode != null &&
+                    !uiState.isLoadingSupportedModels &&
+                    uiState.supportedModels.isNotEmpty(),
             ) {
                 Text(
-                    text = selectedModelSummary,
+                    text = if (uiState.isLoadingSupportedModels) {
+                        demoStringResource(R.string.loading_supported_models)
+                    } else {
+                        selectedModelSummary
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = DemoColors.TextPrimary
@@ -459,22 +459,90 @@ internal fun DiscoveryWorkspaceCard(
                 onDismissRequest = { modelMenuExpanded = false },
                 modifier = Modifier.fillMaxWidth(0.92f)
             ) {
-                listOf(
-                    DeviceModelId.CS7501,
-                    DeviceModelId.CS8501,
-                    DeviceModelId.C740,
-                    DeviceModelId.C750,
-                    DeviceModelId.CS9501,
-                    DeviceModelId.NT91,
-                ).forEach { modelId ->
+                uiState.supportedModels.forEach { model ->
                     DropdownMenuItem(
-                        text = { Text(displayModelLabel(modelId)) },
+                        modifier = Modifier.demoTestTag(DemoTestTags.discoverySupportedModel(model.modelKey)),
+                        text = {
+                            Column {
+                                Text(
+                                    text = model.primaryLabel,
+                                    color = DemoColors.TextPrimary,
+                                )
+                                if (model.secondaryLabel.isNotBlank()) {
+                                    Text(
+                                        text = model.secondaryLabel,
+                                        color = DemoColors.TextSecondary,
+                                        fontSize = 12.sp,
+                                    )
+                                }
+                            }
+                        },
                         onClick = {
                             modelMenuExpanded = false
-                            onSelectModel(modelId)
+                            onSelectModel(model.modelKey)
                         }
                     )
                 }
+            }
+        }
+
+        when {
+            uiState.selectedTransportMode == null -> {
+                Text(
+                    text = demoStringResource(R.string.select_transport_to_load_models),
+                    modifier = Modifier.demoTestTag(DemoTestTags.DISCOVERY_MODEL_STATUS),
+                    color = DemoColors.TextSecondary,
+                    fontSize = 12.sp,
+                )
+            }
+            uiState.isLoadingSupportedModels -> {
+                Text(
+                    text = demoStringResource(R.string.loading_supported_models),
+                    modifier = Modifier.demoTestTag(DemoTestTags.DISCOVERY_MODEL_STATUS),
+                    color = DemoColors.TextSecondary,
+                    fontSize = 12.sp,
+                )
+            }
+            uiState.supportedModelsError != null -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = uiState.supportedModelsError.asString(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .demoTestTag(DemoTestTags.DISCOVERY_MODEL_STATUS),
+                        color = DemoColors.Danger,
+                        fontSize = 12.sp,
+                    )
+                    OutlinedButton(
+                        onClick = onRetrySupportedModels,
+                        modifier = Modifier.demoTestTag(DemoTestTags.DISCOVERY_MODEL_RETRY),
+                    ) {
+                        Text(demoStringResource(R.string.retry))
+                    }
+                }
+            }
+            uiState.supportedModels.isEmpty() -> {
+                Text(
+                    text = demoStringResource(R.string.no_supported_models_for_transport),
+                    modifier = Modifier.demoTestTag(DemoTestTags.DISCOVERY_MODEL_STATUS),
+                    color = DemoColors.TextSecondary,
+                    fontSize = 12.sp,
+                )
+            }
+            else -> {
+                Text(
+                    text = demoStringResource(
+                        R.string.supported_models_loaded_summary,
+                        uiState.supportedModels.size,
+                    ),
+                    modifier = Modifier.demoTestTag(DemoTestTags.DISCOVERY_MODEL_STATUS),
+                    color = DemoColors.TextSecondary,
+                    fontSize = 12.sp,
+                )
             }
         }
 
@@ -624,31 +692,6 @@ internal fun DeviceListSection(
 }
 
 @Composable
-private fun OverviewMetricGrid(items: List<Pair<String, String>>) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { (label, value) ->
-                    DemoLabeledValueBlock(
-                        label = label,
-                        value = value,
-                        modifier = Modifier.weight(1f),
-                        valueFontWeight = FontWeight.Medium,
-                        valueFontSize = 14.sp,
-                    )
-                }
-                if (row.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun DeviceCard(
     device: DiscoveredDevice,
     clickEnabled: Boolean,
@@ -698,26 +741,6 @@ private fun DeviceCard(
                         Text(text = it, fontSize = 11.sp, color = DemoColors.TextSecondary)
                     }
                 }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DemoColors.SurfaceMuted, DemoShapes.panel)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = demoStringResource(R.string.open_console_hint),
-                    fontSize = 12.sp,
-                    color = DemoColors.TextSecondary
-                )
-                Text(
-                    text = demoStringResource(R.string.open),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = DemoColors.AccentStrong
-                )
             }
         }
     }

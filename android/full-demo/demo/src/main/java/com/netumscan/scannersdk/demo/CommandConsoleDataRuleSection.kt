@@ -12,68 +12,76 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.netumscan.scannersdk.demo.ui.theme.DemoColors
-import com.netumscan.scannersdk.model.MasterCommand
 
 @Composable
 internal fun DataRuleConsoleSection(
     vm: CommandConsoleViewModel,
     state: DataRuleConsoleSectionState,
     actions: DataRuleConsoleSectionActions,
+    showParseControls: Boolean = true,
 ) {
-    ExpandableSectionHeader(
-        title = demoStringResource(R.string.parsing_advanced),
-        expanded = state.parseStateExpanded,
-        onToggle = { actions.onParseStateExpandedChange(!state.parseStateExpanded) },
-        testTag = DemoTestTags.CONSOLE_SECTION_PARSE_ADVANCED,
-    )
-    if (state.parseStateExpanded) {
-        Spacer(modifier = Modifier.height(10.dp))
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ParseStateCard(
-                title = demoStringResource(R.string.device_state),
+    if (showParseControls) {
+        ExpandableSectionHeader(
+            title = demoStringResource(R.string.parsing_advanced),
+            expanded = state.parseStateExpanded,
+            onToggle = { actions.onParseStateExpandedChange(!state.parseStateExpanded) },
+            testTag = DemoTestTags.CONSOLE_SECTION_PARSE_ADVANCED,
+        )
+        if (state.parseStateExpanded) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(
-                    onClick = { vm.executeMasterCommand(MasterCommand.READ_CURRENT_CHARSET) },
-                    enabled = state.canExecuteMasterCommands,
-                    modifier = Modifier.fillMaxWidth(),
+                ParseStateCard(
+                    title = demoStringResource(R.string.device_state),
                 ) {
-                    Text(demoStringResource(R.string.read_charset_only))
+                    Text(
+                        text = "${demoStringResource(R.string.device_charset)}: ${state.deviceCharsetSummary.asString()}",
+                        fontSize = 13.sp,
+                        color = DemoColors.TextSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = { vm.readDeviceCharsetSetting() },
+                        enabled = state.canExecuteMasterCommands,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(demoStringResource(R.string.read_charset_only))
+                    }
+                }
+                ParseStateCard(
+                    title = demoStringResource(R.string.local_sdk_parse),
+                ) {
+                    Text(
+                        text = "${demoStringResource(R.string.local_charset)}: ${state.scanCharsetSummary}",
+                        fontSize = 13.sp,
+                        color = DemoColors.TextSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    CharsetSelectorRow(
+                        selected = state.scanCharsetSummary,
+                        enabled = state.canExecuteMasterCommands,
+                        onSelect = { vm.setScanTextCharset(it) },
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "${demoStringResource(R.string.local_terminator)}: ${state.scanTerminatorSummary}",
+                        fontSize = 13.sp,
+                        color = DemoColors.TextSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    TerminatorSelectorRow(
+                        selected = state.scanTerminatorSummary,
+                        enabled = state.canExecuteMasterCommands,
+                        onSelect = { vm.setScanTextTerminator(it.bytes) },
+                    )
                 }
             }
-            ParseStateCard(
-                title = demoStringResource(R.string.local_sdk_parse),
-            ) {
-                Text(
-                    text = "${demoStringResource(R.string.local_charset)}: ${state.scanCharsetSummary}",
-                    fontSize = 13.sp,
-                    color = DemoColors.TextSecondary,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                CharsetSelectorRow(
-                    selected = state.scanCharsetSummary,
-                    enabled = state.canExecuteMasterCommands,
-                    onSelect = { vm.setScanTextCharset(it) },
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "${demoStringResource(R.string.local_terminator)}: ${state.scanTerminatorSummary}",
-                    fontSize = 13.sp,
-                    color = DemoColors.TextSecondary,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                TerminatorSelectorRow(
-                    selected = state.scanTerminatorSummary,
-                    enabled = state.canExecuteMasterCommands,
-                    onSelect = { vm.setScanTerminator(it.bytes) },
-                )
-            }
         }
+        Spacer(modifier = Modifier.height(12.dp))
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
     ExpandableSectionHeader(
         title = demoStringResource(R.string.data_rule_builder),
         expanded = state.dataRuleExpanded,
@@ -85,6 +93,13 @@ internal fun DataRuleConsoleSection(
     }
 
     Spacer(modifier = Modifier.height(12.dp))
+    if (!state.dataRulesSupported) {
+        ConsoleFeedbackBanner(
+            text = demoStringResource(R.string.data_rules_not_supported),
+            tone = ConsoleBannerTone.Error,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+    }
     val builderModeLabel = dataRuleFormModeLabel(state.builderMode)
     DataRuleBuilderCard(
         mode = state.builderMode,
@@ -100,7 +115,7 @@ internal fun DataRuleConsoleSection(
                 valueA = state.builderValueA,
                 valueB = state.builderValueB,
             )
-            vm.executeDataRuleCommand(builderModeLabel, command)
+            vm.applyDataRule(builderModeLabel, command)
         },
     )
 }

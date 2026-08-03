@@ -34,13 +34,13 @@ final class RealDemoSessionHandle: DemoSessionHandle {
 final class FakeDemoSessionHandle: DemoSessionHandle {
     let deviceID: String
     let transportType: TransportType
-    let selectedModelId: DeviceModelId
+    let selectedModelKey: String
     private(set) var latestState: SessionState = .ready
 
-    init(deviceID: String, transportType: TransportType, selectedModelId: DeviceModelId) {
+    init(deviceID: String, transportType: TransportType, selectedModelKey: String) {
         self.deviceID = deviceID
         self.transportType = transportType
-        self.selectedModelId = selectedModelId
+        self.selectedModelKey = selectedModelKey
     }
 
     var isFake: Bool { true }

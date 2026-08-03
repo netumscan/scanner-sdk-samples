@@ -5,7 +5,7 @@ internal enum class DemoScenarioPresetKind {
     READ_INFO,
     READ_BATTERY,
     MASTER_COMMANDS,
-    MODULE_PARAMETERS,
+    PRODUCT_SETTINGS,
     DATA_RULE_BUILDER,
 }
 
@@ -38,9 +38,9 @@ internal object DemoScenarioPresets {
             { DemoStrings.text(R.string.scenario_master_commands_hint) },
         ),
         DemoScenarioPreset(
-            DemoScenarioPresetKind.MODULE_PARAMETERS,
-            { DemoStrings.text(R.string.scenario_module_parameters) },
-            { DemoStrings.text(R.string.scenario_module_parameters_hint) },
+            DemoScenarioPresetKind.PRODUCT_SETTINGS,
+            { DemoStrings.text(R.string.scenario_product_settings) },
+            { DemoStrings.text(R.string.scenario_product_settings_hint) },
         ),
         DemoScenarioPreset(
             DemoScenarioPresetKind.DATA_RULE_BUILDER,

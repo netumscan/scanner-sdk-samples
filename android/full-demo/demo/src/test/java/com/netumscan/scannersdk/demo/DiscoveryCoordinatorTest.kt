@@ -2,7 +2,6 @@ package com.netumscan.scannersdk.demo
 
 import com.netumscan.scannersdk.SessionState
 import com.netumscan.scannersdk.TransportType
-import com.netumscan.scannersdk.model.DeviceModelId
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,8 +13,8 @@ class DiscoveryCoordinatorTest {
     fun fakeDiscoveryReturnsStableBleAndSppDevices() = runTest {
         val coordinator = DiscoveryCoordinator(FakeDemoDiscoveryBackend())
 
-        val ble = coordinator.startDiscovery(DemoTransportMode.BLE, DeviceModelId.CS7501)
-        val spp = coordinator.startDiscovery(DemoTransportMode.SPP, DeviceModelId.CS7501)
+        val ble = coordinator.startDiscovery(DemoTransportMode.BLE, "CS7501")
+        val spp = coordinator.startDiscovery(DemoTransportMode.SPP, "CS7501")
 
         assertTrue(coordinator.isFakeMode)
         assertEquals(TransportType.BLE_GATT, ble.devices.single().transportType)
@@ -26,13 +25,11 @@ class DiscoveryCoordinatorTest {
     @Test
     fun fakeConnectReturnsReadySessionHandle() = runTest {
         val coordinator = DiscoveryCoordinator(FakeDemoDiscoveryBackend())
-        val device = coordinator.startDiscovery(DemoTransportMode.BLE, DeviceModelId.CS7501).devices.single()
+        val device = coordinator.startDiscovery(DemoTransportMode.BLE, "CS7501").devices.single()
 
         val result = coordinator.connectReady(
             device = device,
-            channelKind = com.netumscan.scannersdk.ProtocolChannelKind.SCANNER_MASTER,
-            selectedModelId = DeviceModelId.CS7501,
-            applyDecoderModule = true,
+            selectedModelKey = "CS7501",
         )
 
         val fakeSession = assertNotNull(result.fakeSession)

@@ -12,7 +12,7 @@ class DemoScenarioPresetTest {
                 DemoScenarioPresetKind.READ_INFO,
                 DemoScenarioPresetKind.READ_BATTERY,
                 DemoScenarioPresetKind.MASTER_COMMANDS,
-                DemoScenarioPresetKind.MODULE_PARAMETERS,
+                DemoScenarioPresetKind.PRODUCT_SETTINGS,
                 DemoScenarioPresetKind.DATA_RULE_BUILDER,
             ),
             DemoScenarioPresets.all().map { it.kind },

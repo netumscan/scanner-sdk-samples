@@ -43,9 +43,11 @@ class AppLogUiTest {
         composeRule.onNodeWithTag(DemoTestTags.appLogSourceChip(AppLogSourceFilter.SDK)).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(DemoTestTags.APP_LOG_LIST)
-            .performScrollToNode(hasText("sdk startup complete"))
+            .performScrollToNode(hasText("显示 1 / 3 条，来源=SDK 诊断，等级=全部"))
 
-        composeRule.onNodeWithText("显示 1 / 3 条，来源=SDK，等级=全部").assertIsDisplayed()
+        composeRule.onNodeWithText("显示 1 / 3 条，来源=SDK 诊断，等级=全部").assertIsDisplayed()
+        composeRule.onNodeWithTag(DemoTestTags.APP_LOG_LIST)
+            .performScrollToNode(hasText("sdk startup complete"))
         composeRule.onNodeWithText("sdk startup complete").assertIsDisplayed()
         assertNoVisibleText("ui tapped connect")
     }
@@ -72,6 +74,8 @@ class AppLogUiTest {
         seedLogs()
         composeRule.setAppLogContent()
 
+        composeRule.onNodeWithTag(DemoTestTags.APP_LOG_LIST)
+            .performScrollToNode(hasTestTag(DemoTestTags.APP_LOG_CLEAR_BUTTON))
         composeRule.onNodeWithTag(DemoTestTags.APP_LOG_CLEAR_BUTTON).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(DemoTestTags.APP_LOG_LIST)

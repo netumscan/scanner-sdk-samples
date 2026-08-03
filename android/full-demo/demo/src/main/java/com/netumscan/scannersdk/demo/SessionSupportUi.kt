@@ -1,32 +1,26 @@
 package com.netumscan.scannersdk.demo
 
-import com.netumscan.scannersdk.model.SessionOperationSupportSummary
+import com.netumscan.scannersdk.model.SessionOperationSupport
 
 internal enum class DemoSessionOperation {
     REFRESH_INFO,
     INITIALIZE_SESSION,
     GET_BATTERY_INFO,
-    BASIC_DEVICE_COMMANDS,
-    TEXT_COMMANDS,
-    DATA_RULE_COMMANDS,
-    BEEP,
-    DISABLE_ACK_BEEP,
-    VIBRATE_ON,
-    VIBRATE_OFF,
+    TRIGGER_SCAN,
+    APPLY_DATA_RULE,
+    SET_ACK_BEEP_ENABLED,
+    SET_VIBRATION_ENABLED,
 }
 
-internal fun SessionOperationSupportSummary.supports(operation: DemoSessionOperation): Boolean =
+internal fun SessionOperationSupport.supports(operation: DemoSessionOperation): Boolean =
     when (operation) {
         DemoSessionOperation.REFRESH_INFO -> supportsRefreshInfo
         DemoSessionOperation.INITIALIZE_SESSION -> supportsInitializeSession
         DemoSessionOperation.GET_BATTERY_INFO -> supportsGetBatteryInfo
-        DemoSessionOperation.BASIC_DEVICE_COMMANDS -> supportsExecuteBasicDeviceCommands
-        DemoSessionOperation.TEXT_COMMANDS -> supportsExecuteTextCommands
-        DemoSessionOperation.DATA_RULE_COMMANDS -> supportsExecuteDataRuleCommands
-        DemoSessionOperation.BEEP -> supportsBeep
-        DemoSessionOperation.DISABLE_ACK_BEEP -> supportsDisableAckBeep
-        DemoSessionOperation.VIBRATE_ON -> supportsVibrateOn
-        DemoSessionOperation.VIBRATE_OFF -> supportsVibrateOff
+        DemoSessionOperation.TRIGGER_SCAN -> supportsTriggerScan
+        DemoSessionOperation.APPLY_DATA_RULE -> supportsApplyDataRule
+        DemoSessionOperation.SET_ACK_BEEP_ENABLED -> supportsSetAckBeepEnabled
+        DemoSessionOperation.SET_VIBRATION_ENABLED -> supportsSetVibrationEnabled
     }
 
 internal fun unsupportedDemoSessionOperationReason(operation: DemoSessionOperation): String =
@@ -37,20 +31,12 @@ internal fun unsupportedDemoSessionOperationReason(operation: DemoSessionOperati
             DemoStrings.text(R.string.unsupported_initialize_session)
         DemoSessionOperation.GET_BATTERY_INFO ->
             DemoStrings.text(R.string.unsupported_get_battery_info)
-        DemoSessionOperation.BASIC_DEVICE_COMMANDS ->
-            DemoStrings.text(R.string.unsupported_basic_device_commands)
-        DemoSessionOperation.TEXT_COMMANDS ->
-            DemoStrings.text(R.string.unsupported_text_commands)
-        DemoSessionOperation.DATA_RULE_COMMANDS ->
+        DemoSessionOperation.TRIGGER_SCAN ->
+            DemoStrings.text(R.string.unsupported_trigger_scan)
+        DemoSessionOperation.APPLY_DATA_RULE ->
             DemoStrings.text(R.string.unsupported_data_rule_commands)
-        DemoSessionOperation.BEEP ->
+        DemoSessionOperation.SET_ACK_BEEP_ENABLED ->
             DemoStrings.text(R.string.unsupported_beep)
-        DemoSessionOperation.DISABLE_ACK_BEEP ->
-            DemoStrings.text(R.string.unsupported_disable_ack_beep)
-        DemoSessionOperation.VIBRATE_ON,
-        DemoSessionOperation.VIBRATE_OFF ->
+        DemoSessionOperation.SET_VIBRATION_ENABLED ->
             DemoStrings.text(R.string.unsupported_vibration)
-    }
-
-internal fun unsupportedMasterCommandReason(): String =
-    DemoStrings.text(R.string.unsupported_master_command)
+}

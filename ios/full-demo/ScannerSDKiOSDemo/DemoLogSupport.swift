@@ -1,23 +1,26 @@
 import Foundation
 import SwiftUI
-import UIKit
 
 enum ConsoleEventSource: String, CaseIterable, Identifiable {
     case ui = "UI"
+    case sdk = "SDK"
+    case core = "CORE"
+    case ble = "BLE"
     case session = "SESSION"
     case scan = "SCAN"
     case command = "COMMAND"
-    case sdk = "SDK"
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .ui: return "UI"
+        case .sdk: return DemoStrings.tr("log_source_sdk")
+        case .core: return "CORE"
+        case .ble: return "BLE"
         case .session: return DemoStrings.tr("log_source_session")
         case .scan: return DemoStrings.tr("log_source_scan")
         case .command: return DemoStrings.tr("log_source_command")
-        case .sdk: return DemoStrings.tr("log_source_sdk")
         }
     }
 }
@@ -68,11 +71,36 @@ struct ConsoleEvent: Identifiable, Hashable {
     let message: String
 }
 
+func redactDemoLogMessage(_ message: String) -> String {
+    let replacements = [
+        (
+            #"(?i)\b(serial(?:number)?|device(?:id|_id))\s*[=:]\s*[^,\s/]+"#,
+            "$1=<redacted>"
+        ),
+        (
+            #"(?i)\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b"#,
+            "<redacted-device-id>"
+        ),
+        (
+            #"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b"#,
+            "<redacted-device-id>"
+        ),
+    ]
+    return replacements.reduce(message) { value, replacement in
+        value.replacingOccurrences(
+            of: replacement.0,
+            with: replacement.1,
+            options: .regularExpression
+        )
+    }
+}
+
 func makeSdkConsoleEvent(_ rawMessage: String) -> ConsoleEvent {
     let trimmed = rawMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+    let source = sdkDebugSource(for: trimmed)
     let level = sdkDebugLevel(for: trimmed)
     let message = formatSdkDebugMessage(trimmed)
-    return ConsoleEvent(source: .sdk, level: level, message: message)
+    return ConsoleEvent(source: source, level: level, message: message)
 }
 
 func sdkDiagnosticEvents(in events: [ConsoleEvent]) -> [ConsoleEvent] {
@@ -116,7 +144,7 @@ let logDateFormatter: DateFormatter = {
 }()
 
 func formatLogLine(_ event: ConsoleEvent) -> String {
-    "[\(logDateFormatter.string(from: event.timestamp))] [\(event.source.label)] [\(event.level.label)] \(event.message)"
+    "[\(logDateFormatter.string(from: event.timestamp))] [\(event.source.label)] [\(event.level.label)] \(redactDemoLogMessage(event.message))"
 }
 
 func matchesSource(_ event: ConsoleEvent, filters: Set<ConsoleEventSource>) -> Bool {
@@ -153,6 +181,13 @@ private func sdkDebugLevel(for rawMessage: String) -> ConsoleEventLevel {
     if rawMessage.hasPrefix("core-error:") {
         return .error
     }
+    if rawMessage.hasPrefix("BLE") &&
+        (
+            rawMessage.localizedCaseInsensitiveContains("failed") ||
+                rawMessage.localizedCaseInsensitiveContains("error")
+        ) {
+        return .error
+    }
     if rawMessage.contains("capability-warning") {
         return .warn
     }
@@ -168,13 +203,26 @@ private func sdkDebugLevel(for rawMessage: String) -> ConsoleEventLevel {
     if rawMessage.hasPrefix("initializeSession ") || rawMessage.hasPrefix("capability ") {
         return .info
     }
-    if rawMessage.hasPrefix("resolvedModel=") || rawMessage.hasPrefix("setPreferredModel ") {
+    if rawMessage.hasPrefix("resolvedModel=") {
         return .info
     }
     if rawMessage.hasPrefix("state=") {
         return .info
     }
     return .debug
+}
+
+private func sdkDebugSource(for rawMessage: String) -> ConsoleEventSource {
+    if rawMessage.hasPrefix("core:") || rawMessage.hasPrefix("core-error:") {
+        return .core
+    }
+    if rawMessage.hasPrefix("BLE") ||
+        rawMessage.hasPrefix("[NSDKAppleBLE]") ||
+        rawMessage.contains("onConnectionStateChange") ||
+        rawMessage.contains("onServicesDiscovered") {
+        return .ble
+    }
+    return .sdk
 }
 
 private func formatSdkDebugMessage(_ rawMessage: String) -> String {
@@ -218,12 +266,6 @@ private func formatSdkDebugMessage(_ rawMessage: String) -> String {
             "sdk_log_resolved_model",
             fallback: "SDK resolved model",
             value: value.replacingOccurrences(of: "resolvedModel=", with: "")
-        )
-    case let value where value.hasPrefix("setPreferredModel "):
-        return prefix + DemoStrings.withLocalizedValue(
-            "sdk_log_preferred_model_applied",
-            fallback: "Preferred model applied",
-            value: value.replacingOccurrences(of: "setPreferredModel ", with: "")
         )
     case let value where value.hasPrefix("state="):
         return prefix + DemoStrings.withLocalizedValue(
@@ -384,14 +426,4 @@ private func sdkValue(after key: String, in text: String) -> String? {
     let tail = text[range.upperBound...]
     let end = tail.firstIndex(of: " ") ?? tail.endIndex
     return String(tail[..<end])
-}
-
-struct ActivityView: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

@@ -3,7 +3,6 @@ package com.netumscan.scannersdk.demo
 import com.netumscan.scannersdk.ScannerSdk
 import com.netumscan.scannersdk.ScannerSession
 import com.netumscan.scannersdk.SessionState
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import com.netumscan.scannersdk.model.ScanEvent
 import com.netumscan.scannersdk.model.SessionFailure
@@ -19,28 +18,28 @@ internal object DemoSessionCoordinator {
         private set
     var activeSessionHandle: DemoSessionHandle? = null
         private set
-    var preferredModelId: DeviceModelId = DeviceModelId.UNKNOWN
+    var preferredModelKey: String = ""
         private set
 
-    fun bind(device: DiscoveredDevice, session: ScannerSession, preferredModelId: DeviceModelId) {
+    fun bind(device: DiscoveredDevice, session: ScannerSession, preferredModelKey: String) {
         selectedDevice = device
         activeSession = session
         activeSessionHandle = RealDemoSessionHandle(session, device.deviceId, device.transportType)
-        this.preferredModelId = preferredModelId
+        this.preferredModelKey = preferredModelKey
     }
 
-    fun bindFake(device: DiscoveredDevice, session: DemoSessionHandle, preferredModelId: DeviceModelId) {
+    fun bindFake(device: DiscoveredDevice, session: DemoSessionHandle, preferredModelKey: String) {
         selectedDevice = device
         activeSession = null
         activeSessionHandle = session
-        this.preferredModelId = preferredModelId
+        this.preferredModelKey = preferredModelKey
     }
 
     fun clear() {
         selectedDevice = null
         activeSession = null
         activeSessionHandle = null
-        preferredModelId = DeviceModelId.UNKNOWN
+        preferredModelKey = ""
     }
 
     fun observe(

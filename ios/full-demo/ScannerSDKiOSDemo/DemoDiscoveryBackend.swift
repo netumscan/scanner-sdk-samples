@@ -18,13 +18,12 @@ protocol DemoDiscoveryBackend {
     var debugEvents: AsyncStream<String> { get }
 
     func initialize() throws
-    func startDiscovery(selectedModelId: DeviceModelId) throws -> DemoDiscoveryStartResult
+    func startDiscovery(selectedModelKey: String) throws -> DemoDiscoveryStartResult
     func stopDiscovery() throws
     func connectReady(
         _ device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Bool
+        selectedModelKey: String,
+        applyModelConfig: Bool
     ) async throws -> DemoConnectResult
 }
 
@@ -40,8 +39,8 @@ struct RealDemoDiscoveryBackend: DemoDiscoveryBackend {
         try sdk.initialize()
     }
 
-    func startDiscovery(selectedModelId: DeviceModelId) throws -> DemoDiscoveryStartResult {
-        try sdk.startDiscovery(transports: [.bleGatt], selectedModelId: selectedModelId)
+    func startDiscovery(selectedModelKey: String) throws -> DemoDiscoveryStartResult {
+        try sdk.startDiscovery(transports: [.bleGatt], selectedModelKey: selectedModelKey)
         return DemoDiscoveryStartResult()
     }
 
@@ -51,16 +50,13 @@ struct RealDemoDiscoveryBackend: DemoDiscoveryBackend {
 
     func connectReady(
         _ device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Bool
+        selectedModelKey: String,
+        applyModelConfig: Bool
     ) async throws -> DemoConnectResult {
         let session = try await sdk.connectReady(
             deviceId: device.deviceId,
             transport: device.transportType,
-            channelKind: channelKind,
-            selectedModelId: selectedModelId,
-            applyDecoderModule: applyDecoderModule
+            selectedModelKey: selectedModelKey
         )
         return DemoConnectResult(session: session)
     }
@@ -79,15 +75,15 @@ struct FakeDemoDiscoveryBackend: DemoDiscoveryBackend {
 
     func initialize() throws {}
 
-    func startDiscovery(selectedModelId: DeviceModelId) throws -> DemoDiscoveryStartResult {
-        let model = selectedModelId == .unknown ? .cs7501 : selectedModelId
+    func startDiscovery(selectedModelKey: String) throws -> DemoDiscoveryStartResult {
+        let model = selectedModelKey == "" ? "CS7501" : selectedModelKey
         return DemoDiscoveryStartResult(
             devices: [
                 DiscoveredDevice(
                     deviceId: "FAKE-BLE-\(model)-001",
                     name: "Fake BLE Scanner",
                     transportType: .bleGatt,
-                    modelId: model,
+                    modelKey: model,
                     matchReason: "fake-demo",
                     rssi: -48
                 )
@@ -99,16 +95,15 @@ struct FakeDemoDiscoveryBackend: DemoDiscoveryBackend {
 
     func connectReady(
         _ device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Bool
+        selectedModelKey: String,
+        applyModelConfig: Bool
     ) async throws -> DemoConnectResult {
         DemoConnectResult(
             session: nil,
             fakeSession: FakeDemoSessionHandle(
                 deviceID: device.deviceId,
                 transportType: device.transportType,
-                selectedModelId: selectedModelId
+                selectedModelKey: selectedModelKey
             )
         )
     }

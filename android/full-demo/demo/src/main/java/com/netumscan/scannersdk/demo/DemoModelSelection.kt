@@ -1,59 +1,50 @@
 package com.netumscan.scannersdk.demo
 
-import com.netumscan.scannersdk.model.DeviceModelId
-import com.netumscan.scannersdk.model.ModuleFamily
-import com.netumscan.scannersdk.model.displayName
-import com.netumscan.scannersdk.model.localizedLabel
 
-internal fun displayModelLabel(modelId: DeviceModelId): String = modelId.displayName()
+internal fun displayModelLabel(modelKey: String): String = modelKey.ifBlank { "Unknown" }
 
-internal fun displayModuleFamilyLabel(family: ModuleFamily): String {
-    val label = family.localizedLabel()
-    return SdkLabelResolver.resolve(label.localizationKey, label.fallbackDisplayName)
+internal fun resolveConnectionModelKey(
+    selectedModelKey: String,
+    discoveredModelKey: String,
+): String {
+    return selectedModelKey.takeIf { it != "" } ?: discoveredModelKey
 }
 
-internal fun resolveConnectionModelId(
-    selectedModelId: DeviceModelId,
-    discoveredModelId: DeviceModelId,
-): DeviceModelId {
-    return selectedModelId.takeIf { it != DeviceModelId.UNKNOWN } ?: discoveredModelId
+internal fun formatSelectedModelSummary(selectedModelKey: String): String {
+    return formatSelectedModelSummaryText(selectedModelKey).asStringForCurrentLanguage()
 }
 
-internal fun formatSelectedModelSummary(selectedModelId: DeviceModelId): String {
-    return formatSelectedModelSummaryText(selectedModelId).asStringForCurrentLanguage()
-}
-
-internal fun formatSelectedModelSummaryText(selectedModelId: DeviceModelId): UiText {
-    return if (selectedModelId == DeviceModelId.UNKNOWN) {
+internal fun formatSelectedModelSummaryText(selectedModelKey: String): UiText {
+    return if (selectedModelKey == "") {
         uiText(R.string.selected_model_not_provided)
     } else {
         joinedText(
             uiText(R.string.customer_selected_model),
-            rawDisplayText(": ${displayModelLabel(selectedModelId)}"),
+            rawDisplayText(": ${displayModelLabel(selectedModelKey)}"),
         )
     }
 }
 
 internal fun formatSdkResolvedModelSummary(
-    selectedModelId: DeviceModelId,
-    resolvedModel: DeviceModelId,
+    selectedModelKey: String,
+    resolvedModel: String,
 ): String {
-    return formatSdkResolvedModelSummaryText(selectedModelId, resolvedModel).asStringForCurrentLanguage()
+    return formatSdkResolvedModelSummaryText(selectedModelKey, resolvedModel).asStringForCurrentLanguage()
 }
 
 internal fun formatSdkResolvedModelSummaryText(
-    selectedModelId: DeviceModelId,
-    resolvedModel: DeviceModelId,
+    selectedModelKey: String,
+    resolvedModel: String,
 ): UiText {
-    val resolvedValue = if (resolvedModel == DeviceModelId.UNKNOWN) {
+    val resolvedValue = if (resolvedModel == "") {
         uiText(R.string.not_resolved)
     } else {
         rawDisplayText(displayModelLabel(resolvedModel))
     }
     val detail = when {
-        selectedModelId == DeviceModelId.UNKNOWN || resolvedModel == DeviceModelId.UNKNOWN -> resolvedValue
-        selectedModelId == resolvedModel -> resolvedValue
-        else -> uiText(R.string.sdk_model_mismatch_detail, resolvedValue, displayModelLabel(selectedModelId))
+        selectedModelKey == "" || resolvedModel == "" -> resolvedValue
+        selectedModelKey == resolvedModel -> resolvedValue
+        else -> uiText(R.string.sdk_model_mismatch_detail, resolvedValue, displayModelLabel(selectedModelKey))
     }
     return joinedText(
         uiText(R.string.sdk_resolved_model),

@@ -22,12 +22,14 @@ struct DemoLanguageToolbarMenu: ToolbarContent {
 
 struct DemoAppLogsToolbarButton: ToolbarContent {
     let onOpenLogs: () -> Void
+    var isDisabled = false
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button(DemoStrings.tr("app_logs")) {
                 onOpenLogs()
             }
+            .disabled(isDisabled)
             .accessibilityIdentifier(DemoAccessibility.appLogsToolbarButton)
         }
     }

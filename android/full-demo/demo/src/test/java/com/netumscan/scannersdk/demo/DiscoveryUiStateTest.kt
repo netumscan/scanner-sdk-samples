@@ -6,6 +6,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DiscoveryUiStateTest {
+    private val supportedModels = listOf(
+        DemoSupportedModel("CS7501", "CS7501", "c_pro", "C Pro series"),
+    )
+
     @Test
     fun defaultState_disablesDiscoveryActionsUntilInitializedAndTransportSelected() {
         val state = DiscoveryUiState()
@@ -21,6 +25,7 @@ class DiscoveryUiStateTest {
         val state = DiscoveryUiState(
             isInitialized = true,
             selectedTransportMode = DemoTransportMode.BLE,
+            supportedModels = supportedModels,
         )
 
         assertFalse(state.canInitializeSdk)
@@ -35,6 +40,7 @@ class DiscoveryUiStateTest {
             isInitialized = true,
             isDiscovering = true,
             selectedTransportMode = DemoTransportMode.BLE,
+            supportedModels = supportedModels,
         )
 
         assertFalse(state.canStartDiscovery)
@@ -46,6 +52,7 @@ class DiscoveryUiStateTest {
         val state = DiscoveryUiState(
             isInitialized = true,
             selectedTransportMode = DemoTransportMode.BLE,
+            supportedModels = supportedModels,
             hasActiveSession = true,
         )
 
@@ -67,5 +74,22 @@ class DiscoveryUiStateTest {
 
         assertFalse(state.canConnectDiscoveredDevice)
         assertEquals("device-1", state.connectingDeviceId)
+    }
+
+    @Test
+    fun modelCatalogLoadingOrFailure_disablesDiscoveryStart() {
+        val loading = DiscoveryUiState(
+            isInitialized = true,
+            selectedTransportMode = DemoTransportMode.BLE,
+            supportedModels = supportedModels,
+            isLoadingSupportedModels = true,
+        )
+        val failed = loading.copy(
+            isLoadingSupportedModels = false,
+            supportedModelsError = rawDisplayText("failed"),
+        )
+
+        assertFalse(loading.canStartDiscovery)
+        assertFalse(failed.canStartDiscovery)
     }
 }

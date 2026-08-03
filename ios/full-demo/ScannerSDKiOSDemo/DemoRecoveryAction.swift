@@ -52,19 +52,19 @@ func demoRecoveryAction(for failure: DiscoveryFailure) -> DemoRecoveryAction? {
 
 func demoRecoveryAction(for failure: SessionFailure) -> DemoRecoveryAction? {
     guard failure.transportType == .bleGatt else { return nil }
-    switch failure.code {
-    case .platformStatusError, .gattFailure:
+    switch failure.issue {
+    case .platformError, .bleGattFailure:
         return .recoverBleConnection
     case .unknown:
-        return failure.bleTransportIssue == .platformStatusError ? .recoverBleConnection : nil
+        return nil
     case .connectionTimeout,
-         .serviceDiscoveryStartFailed,
-         .serviceDiscoveryFailed,
-         .notifyServiceMissing,
-         .notifyCharacteristicMissing,
-         .setNotificationFailed,
-         .notifyDescriptorMissing,
-         .notifyDescriptorWriteFailed:
+         .bleServiceDiscoveryStartFailed,
+         .bleServiceDiscoveryFailed,
+         .bleNotifyServiceMissing,
+         .bleNotifyCharacteristicMissing,
+         .bleNotificationEnableFailed,
+         .bleNotifyDescriptorMissing,
+         .bleNotifyDescriptorWriteFailed:
         return nil
     }
 }

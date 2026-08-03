@@ -40,11 +40,13 @@ class DeviceStateSummaryFormatterTest {
             versionChipsetSuffix = "chipsfx",
             versionReleaseCode = "release",
             versionExtensionCode = "ext",
+            bluetoothName = "scanner-bt",
+            bluetoothFirmwareVersion = "bt-fw",
         )
         val summary = DeviceStateSummaryFormatter.format(info)
 
         assertEquals(
-            "固件=FW1.0  硬件=HW2.0  系列码=customer",
+            "固件=FW1.0  硬件=HW2.0  系列码=customer  蓝牙名称=scanner-bt  蓝牙固件版本=bt-fw",
             summary.infoSummary.asStringForCurrentLanguage()
         )
         assertEquals(
@@ -74,10 +76,12 @@ class DeviceStateSummaryFormatterTest {
             versionChipsetSuffix = "",
             versionReleaseCode = "",
             versionExtensionCode = "",
+            bluetoothName = "",
+            bluetoothFirmwareVersion = "",
         )
         val summary = DeviceStateSummaryFormatter.format(info)
 
-        assertEquals("固件=-  硬件=-  系列码=-", summary.infoSummary.asStringForCurrentLanguage())
+        assertEquals("固件=-  硬件=-  系列码=-  蓝牙名称=-  蓝牙固件版本=-", summary.infoSummary.asStringForCurrentLanguage())
         assertEquals("当前页面未自动查询设备配置项", summary.deviceCharsetSummary.asStringForCurrentLanguage())
         assertEquals("当前页面未自动查询设备终端符", summary.deviceTerminalSummary.asStringForCurrentLanguage())
     }
@@ -102,13 +106,15 @@ class DeviceStateSummaryFormatterTest {
             versionChipsetSuffix = "",
             versionReleaseCode = "",
             versionExtensionCode = "",
+            bluetoothName = "",
+            bluetoothFirmwareVersion = "",
         )
         val summary = DeviceStateSummaryFormatter.format(info)
 
-        assertEquals("固件=FW1.0  硬件=HW2.0  系列码=customer", summary.infoSummary.asStringForCurrentLanguage())
+        assertEquals("固件=FW1.0  硬件=HW2.0  系列码=customer  蓝牙名称=-  蓝牙固件版本=-", summary.infoSummary.asStringForCurrentLanguage())
 
         DemoLocaleController.setLanguageForTest(DemoLanguage.EN)
 
-        assertEquals("Firmware=FW1.0  Hardware=HW2.0  Series Code=customer", summary.infoSummary.asStringForCurrentLanguage())
+        assertEquals("Firmware=FW1.0  Hardware=HW2.0  Series Code=customer  Bluetooth name=-  Bluetooth firmware version=-", summary.infoSummary.asStringForCurrentLanguage())
     }
 }

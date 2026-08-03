@@ -1,3 +1,4 @@
+import ScannerSDK
 import SwiftUI
 
 private enum DemoRoute: Hashable {
@@ -18,7 +19,7 @@ struct ContentView: View {
                 onLanguageChange: { localization.language = $0 },
                 onConnect: viewModel.connect,
                 onOpenConsole: { push(.console) },
-                onOpenLogs: { push(.logs) }
+                onOpenLogs: openLogs
             )
             .navigationDestination(for: DemoRoute.self) { route in
                 switch route {
@@ -27,7 +28,7 @@ struct ContentView: View {
                         viewModel: viewModel,
                         selectedLanguage: localization.language,
                         onLanguageChange: { localization.language = $0 },
-                        onOpenLogs: { push(.logs) }
+                        onOpenLogs: openLogs
                     )
                 case .logs:
                     AppLogsPageView(
@@ -48,13 +49,14 @@ struct ContentView: View {
         } message: {
             Text(viewModel.alertErrorText ?? "")
         }
-        .onChange(of: viewModel.sessionStateText) { newValue in
+        .onChange(of: viewModel.sessionState) { newValue in
             syncNavigation(for: newValue)
         }
         .onChange(of: localization.language) { _ in
             viewModel.refreshLocalizedUi()
         }
         .onAppear {
+            viewModel.onAppear()
             configureLaunchRouteIfNeeded()
         }
     }
@@ -64,13 +66,18 @@ struct ContentView: View {
         navigationPath.append(route)
     }
 
-    private func syncNavigation(for sessionState: String) {
+    private func openLogs() {
+        guard viewModel.canOpenLogs else { return }
+        push(.logs)
+    }
+
+    private func syncNavigation(for sessionState: SessionState) {
         switch sessionState {
-        case "ready":
-            if !navigationPath.contains(.console) {
-                navigationPath.append(.console)
+        case .ready:
+            if navigationPath.last != .console {
+                navigationPath = [.console]
             }
-        case "disconnected", "error", "idle":
+        case .disconnected, .error, .idle:
             navigationPath.removeAll { $0 == .console }
         default:
             break

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import ScannerSDK
 
 enum DemoLanguage: String, CaseIterable, Identifiable {
     case system
@@ -66,11 +67,10 @@ final class DemoLocalization: ObservableObject {
 enum DemoStrings {
     private enum Table {
         static let ui = "Localizable"
-        static let sdk = "Nsdk"
     }
 
     static func tr(_ key: String) -> String {
-        tr(key, fallback: key)
+        tr(key, fallback: humanizedFallback(for: key))
     }
 
     static func tr(_ key: String, fallback: String) -> String {
@@ -86,11 +86,13 @@ enum DemoStrings {
     }
 
     static func sdk(_ localizationKey: String, fallback: String) -> String {
-        let normalized = normalizeSdkKey(localizationKey)
-        guard isSdkResourceKey(normalized) else {
-            return fallback
-        }
-        return lookup(normalized, tableName: Table.sdk, fallback: fallback)
+        ScannerSDK.shared.localize(
+            localizationKey,
+            fallbackDisplayName: fallback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? humanizedFallback(for: localizationKey)
+                : fallback,
+            locale: sdkLocale
+        )
     }
 
     static func withLocalizedValue(_ key: String, fallback: String, value: String) -> String {
@@ -101,20 +103,27 @@ enum DemoStrings {
     static var unnamedDevice: String { tr("unnamed_device_name") }
     static var emptyValue: String { tr("empty_value") }
 
-    private static func normalizeSdkKey(_ key: String) -> String {
-        key
-            .replacingOccurrences(of: ".", with: "_")
-            .replacingOccurrences(of: "-", with: "_")
-            .lowercased()
-    }
-
-    private static func isSdkResourceKey(_ key: String) -> Bool {
-        key.hasPrefix("nsdk_")
-            && key.range(of: #"^[a-z0-9_]+$"#, options: .regularExpression) != nil
-    }
-
     private static func lookup(_ key: String, tableName: String, fallback: String) -> String {
         NSLocalizedString(key, tableName: tableName, bundle: selectedBundle, value: fallback, comment: "")
+    }
+
+    private static func humanizedFallback(for key: String) -> String {
+        let acronyms: Set<String> = ["ACK", "BLE", "BT", "GATT", "HID", "ID", "RF", "SDK", "SPP", "UI", "USB"]
+        let normalizedKey = key
+            .replacingOccurrences(of: "nsdk.", with: "")
+            .replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: "-", with: "_")
+        let words = normalizedKey
+            .split(separator: "_")
+            .map { rawWord -> String in
+                let word = String(rawWord)
+                let uppercased = word.uppercased()
+                if acronyms.contains(uppercased) {
+                    return uppercased
+                }
+                return word.prefix(1).uppercased() + String(word.dropFirst())
+            }
+        return words.isEmpty ? key : words.joined(separator: " ")
     }
 
     private static var selectedBundle: Bundle {
@@ -126,6 +135,14 @@ enum DemoStrings {
             return .main
         }
         return bundle
+    }
+
+    private static var sdkLocale: Locale {
+        switch DemoLocalization.shared.language {
+        case .system: return .current
+        case .zh: return Locale(identifier: "zh-Hans")
+        case .en: return Locale(identifier: "en")
+        }
     }
 
 }

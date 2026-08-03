@@ -1,6 +1,5 @@
 package com.netumscan.scannersdk.demo
 
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 
 internal class DemoDiscoveryDeviceStore {
@@ -43,7 +42,7 @@ internal class DemoDiscoveryDeviceStore {
             deviceId = new.deviceId,
             name = if (new.name.isNotBlank()) new.name else old.name,
             transportType = new.transportType,
-            modelId = new.modelId.takeIf { it != DeviceModelId.UNKNOWN } ?: old.modelId,
+            modelKey = new.modelKey.takeIf { it != "" } ?: old.modelKey,
             matchReason = new.matchReason ?: old.matchReason,
             rssi = maxOf(old.rssi ?: Int.MIN_VALUE, new.rssi ?: Int.MIN_VALUE).takeIf { it != Int.MIN_VALUE },
         )

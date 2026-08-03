@@ -1,7 +1,6 @@
 package com.netumscan.scannersdk.demo
 
 import com.netumscan.scannersdk.SessionState
-import com.netumscan.scannersdk.model.DeviceModelId
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -14,6 +13,9 @@ class DemoDiagnosticsStoreTest {
             DemoDiagnosticsStore.updatePlatform(
                 DemoPlatformDiagnostics(
                     demoVersion = "1.2.3",
+                    demoBuild = "12",
+                    sdkVersion = "1.0.0",
+                    sdkCommit = "4989fda4",
                     androidVersion = "Android 15 (API 35)",
                     bluetoothEnabled = true,
                     locationEnabled = false,
@@ -24,14 +26,15 @@ class DemoDiagnosticsStoreTest {
             )
             DemoDiagnosticsStore.updateSdkInitialized(true)
             DemoDiagnosticsStore.updateTransport(DemoTransportMode.BLE)
-            DemoDiagnosticsStore.updateSelectedModel(DeviceModelId.CS7501)
-            DemoDiagnosticsStore.updateResolvedModel(DeviceModelId.CS7501)
+            DemoDiagnosticsStore.updateSelectedModel("CS7501")
+            DemoDiagnosticsStore.updateResolvedModel("CS7501")
             DemoDiagnosticsStore.updateSessionState(SessionState.READY)
             DemoDiagnosticsStore.updateRecentFailure("last failure")
 
             val summary = DemoDiagnosticsStore.summaryText().asStringForCurrentLanguage()
 
-            assertTrue(summary.contains("1.2.3 / Android 15"))
+            assertTrue(summary.contains("1.2.3 (12) / Android 15"))
+            assertTrue(summary.contains("SDK: 1.0.0 / 4989fda4"))
             assertTrue(summary.contains("scan=Yes"))
             assertTrue(summary.contains("location=No"))
             assertTrue(summary.contains("initialized=Yes"))

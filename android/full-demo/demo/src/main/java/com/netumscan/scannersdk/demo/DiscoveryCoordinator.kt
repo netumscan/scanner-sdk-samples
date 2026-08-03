@@ -1,8 +1,6 @@
 package com.netumscan.scannersdk.demo
 
 import android.content.Context
-import com.netumscan.scannersdk.ProtocolChannelKind
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import com.netumscan.scannersdk.model.DiscoveryFailure
 import kotlinx.coroutines.flow.Flow
@@ -25,17 +23,15 @@ internal class DiscoveryCoordinator(
 
     suspend fun startDiscovery(
         mode: DemoTransportMode,
-        selectedModelId: DeviceModelId,
+        selectedModelKey: String,
     ): DemoDiscoveryStartResult {
-        return backend.startDiscovery(mode, selectedModelId)
+        return backend.startDiscovery(mode, selectedModelKey)
     }
 
     suspend fun connectReady(
         device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Boolean,
+        selectedModelKey: String,
     ): DemoConnectResult {
-        return backend.connectReady(device, channelKind, selectedModelId, applyDecoderModule)
+        return backend.connectReady(device, selectedModelKey)
     }
 }

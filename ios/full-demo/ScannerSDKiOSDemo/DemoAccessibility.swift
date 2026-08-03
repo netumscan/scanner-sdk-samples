@@ -4,6 +4,8 @@ enum DemoAccessibility {
     static let discoveryErrorBanner = "ios_demo.discovery.error_banner"
     static let discoveryRecoveryActionButton = "ios_demo.discovery.recovery_action_button"
     static let selectedModelPicker = "ios_demo.discovery.selected_model_picker"
+    static let supportedModelsStatus = "ios_demo.discovery.supported_models_status"
+    static let supportedModelsRetryButton = "ios_demo.discovery.supported_models_retry_button"
     static let initSdkButton = "ios_demo.discovery.init_sdk_button"
     static let startDiscoveryButton = "ios_demo.discovery.start_discovery_button"
     static let stopDiscoveryButton = "ios_demo.discovery.stop_discovery_button"
@@ -15,26 +17,42 @@ enum DemoAccessibility {
 
     static let consoleList = "ios_demo.console.list"
     static let consoleSummaryCard = "ios_demo.console.summary_card"
-    static let consoleLastActionBanner = "ios_demo.console.last_action_banner"
-    static let consoleErrorBanner = "ios_demo.console.error_banner"
-    static let consoleQuickActionsSection = "ios_demo.console.quick_actions_section"
-    static let consoleMasterCommandsSection = "ios_demo.console.master_commands_section"
-    static let consoleParsingAdvancedSection = "ios_demo.console.parsing_advanced_section"
-    static let consoleDataRuleBuilderSection = "ios_demo.console.data_rule_builder_section"
-    static let consoleModuleCommandsSection = "ios_demo.console.module_commands_section"
-    static let consoleModuleParameterCatalog = "ios_demo.console.module_parameter_catalog"
-
-    static func consoleOperationScopeButton(_ scope: String) -> String {
-        "ios_demo.console.operation_scope.\(scope)"
-    }
-
-    static func consoleQuickActionButton(_ actionID: String) -> String {
-        "ios_demo.console.quick_action.\(actionID)"
-    }
-
+    static let consoleDisconnectButton = "ios_demo.console.disconnect_button"
+    static let consoleAckBeepOnButton = "ios_demo.console.ack_beep_on_button"
+    static let consoleAckBeepOffButton = "ios_demo.console.ack_beep_off_button"
+    static let consoleVibrateOnButton = "ios_demo.console.vibrate_on_button"
+    static let consoleVibrateOffButton = "ios_demo.console.vibrate_off_button"
     static let logsList = "ios_demo.logs.list"
     static let logsFocusSdkButton = "ios_demo.logs.focus_sdk_button"
     static let logsExportFilteredButton = "ios_demo.logs.export_filtered_button"
     static let logsExportAllButton = "ios_demo.logs.export_all_button"
     static let logsClearButton = "ios_demo.logs.clear_button"
+
+    static func consoleOperationScopeButton(_ scope: String) -> String {
+        "ios_demo.console.operation_scope.\(scope)"
+    }
+
+    static func consoleTab(_ tab: String) -> String {
+        "ios_demo.console.tab.\(tab)"
+    }
+
+    static func capabilityDomain(_ key: String) -> String {
+        "ios_demo.console.capability_domain.\(key)"
+    }
+
+    static func capabilityDomainDetail(_ key: String) -> String {
+        "ios_demo.console.capability_domain_detail.\(key)"
+    }
+
+    static func capabilitySettingGroup(_ family: String, _ section: String) -> String {
+        "ios_demo.console.capability_group.\(family).\(section)"
+    }
+
+    static func capabilitySetting(_ key: String) -> String {
+        "ios_demo.console.capability_setting.\(key)"
+    }
+
+    static func capabilitySettingEditor(_ key: String) -> String {
+        "ios_demo.console.capability_setting_editor.\(key)"
+    }
 }

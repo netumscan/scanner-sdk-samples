@@ -17,7 +17,9 @@ enum DeviceStateSummaryFormatter {
             infoSummarySource: .info(
                 firmwareVersion: info.firmwareVersion,
                 hardwareVersion: info.hardwareVersion,
-                versionSeriesCode: info.versionSeriesCode
+                versionSeriesCode: info.versionSeriesCode,
+                bluetoothName: info.bluetoothName,
+                bluetoothFirmwareVersion: info.bluetoothFirmwareVersion
             ),
             deviceCharsetSummarySource: .notRead,
             deviceTerminalSummarySource: .notRead

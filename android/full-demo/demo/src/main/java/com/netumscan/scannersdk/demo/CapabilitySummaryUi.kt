@@ -4,31 +4,32 @@ import com.netumscan.scannersdk.model.DeviceCapabilitySummary
 import com.netumscan.scannersdk.model.localizedLabel as localizedSdkLabel
 
 internal data class CapabilitySummaryUi(
-    val commandSet: UiText,
-    val formFactor: UiText,
-    val supportsMasterCommands: Boolean,
-    val supportsScannerMaster: Boolean,
+    val supportsDeviceCommands: Boolean,
+    val supportsSettingsRead: Boolean,
+    val supportsSettingsWrite: Boolean,
+    val supportsDataRules: Boolean,
+    val supportsBattery: Boolean,
     val status: UiText,
 ) {
     fun asText(): UiText = uiText(
-        R.string.capability_summary_format,
-        commandSet,
-        formFactor,
-        supportFlagText(supportsMasterCommands),
-        supportFlagText(supportsScannerMaster),
+        R.string.capability_summary_public_format,
+        supportFlagText(supportsDeviceCommands),
+        supportFlagText(supportsSettingsRead),
+        supportFlagText(supportsSettingsWrite),
+        supportFlagText(supportsDataRules),
+        supportFlagText(supportsBattery),
         status,
     )
 }
 
 internal fun DeviceCapabilitySummary.toCapabilitySummaryUi(): CapabilitySummaryUi {
-    val commandSetLabel = defaultCommandSet.localizedSdkLabel()
-    val formFactorLabel = formFactor.localizedSdkLabel()
     val statusLabel = supportStatus.localizedSdkLabel()
     return CapabilitySummaryUi(
-        commandSet = sdkText(commandSetLabel.localizationKey, commandSetLabel.fallbackDisplayName),
-        formFactor = sdkText(formFactorLabel.localizationKey, formFactorLabel.fallbackDisplayName),
-        supportsMasterCommands = supportsMasterCommands,
-        supportsScannerMaster = supportsScannerMaster,
+        supportsDeviceCommands = supportsDeviceCommands,
+        supportsSettingsRead = supportsSettingsRead,
+        supportsSettingsWrite = supportsSettingsWrite,
+        supportsDataRules = supportsDataRules,
+        supportsBattery = supportsBattery,
         status = sdkText(statusLabel.localizationKey, statusLabel.fallbackDisplayName),
     )
 }

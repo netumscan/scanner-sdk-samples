@@ -4,6 +4,9 @@ plugins {
     kotlin("plugin.compose")
 }
 
+val sdkSourceCommit = providers.environmentVariable("NSDK_SDK_COMMIT")
+    .orElse("local-dev")
+
 android {
     namespace = "com.netumscan.scannersdk.demo"
     compileSdk = 35
@@ -12,8 +15,9 @@ android {
         applicationId = "com.netumscan.scannersdk.demo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.1.3"
+        versionCode = 12
+        versionName = "1.0.0"
+        buildConfigField("String", "SDK_COMMIT", "\"${sdkSourceCommit.get()}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -37,6 +41,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
@@ -44,7 +49,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
 
-    implementation("com.netumscan:scanner-sdk-android:0.1.3")
+    implementation("com.netumscan:scanner-sdk-android:1.0.0")
     implementation(composeBom)
     implementation("androidx.activity:activity-ktx:1.9.1")
     implementation("androidx.activity:activity-compose:1.9.1")

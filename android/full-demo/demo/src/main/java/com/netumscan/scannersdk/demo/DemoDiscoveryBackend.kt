@@ -1,11 +1,9 @@
 package com.netumscan.scannersdk.demo
 
 import android.content.Context
-import com.netumscan.scannersdk.ProtocolChannelKind
 import com.netumscan.scannersdk.ScannerSdk
 import com.netumscan.scannersdk.ScannerSession
 import com.netumscan.scannersdk.TransportType
-import com.netumscan.scannersdk.model.DeviceModelId
 import com.netumscan.scannersdk.model.DiscoveredDevice
 import com.netumscan.scannersdk.model.DiscoveryFailure
 import kotlinx.coroutines.flow.Flow
@@ -29,12 +27,10 @@ internal interface DemoDiscoveryBackend {
 
     suspend fun initialize(context: Context)
     suspend fun stopDiscovery()
-    suspend fun startDiscovery(mode: DemoTransportMode, selectedModelId: DeviceModelId): DemoDiscoveryStartResult
+    suspend fun startDiscovery(mode: DemoTransportMode, selectedModelKey: String): DemoDiscoveryStartResult
     suspend fun connectReady(
         device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Boolean,
+        selectedModelKey: String,
     ): DemoConnectResult
 }
 
@@ -54,25 +50,21 @@ internal object RealDemoDiscoveryBackend : DemoDiscoveryBackend {
 
     override suspend fun startDiscovery(
         mode: DemoTransportMode,
-        selectedModelId: DeviceModelId,
+        selectedModelKey: String,
     ): DemoDiscoveryStartResult {
-        ScannerSdk.startDiscovery(mode.sdkTransport, selectedModelId)
+        ScannerSdk.startDiscovery(mode.sdkTransport, selectedModelKey)
         return DemoDiscoveryStartResult()
     }
 
     override suspend fun connectReady(
         device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Boolean,
+        selectedModelKey: String,
     ): DemoConnectResult {
         return DemoConnectResult(
             session = ScannerSdk.connectReady(
                 deviceId = device.deviceId,
                 transportType = device.transportType,
-                channelKind = channelKind,
-                selectedModelId = selectedModelId,
-                applyDecoderModule = applyDecoderModule,
+                selectedModelKey = selectedModelKey,
             )
         )
     }
@@ -96,34 +88,32 @@ internal class FakeDemoDiscoveryBackend : DemoDiscoveryBackend {
 
     override suspend fun startDiscovery(
         mode: DemoTransportMode,
-        selectedModelId: DeviceModelId,
+        selectedModelKey: String,
     ): DemoDiscoveryStartResult {
-        debugFlow.tryEmit("fake discovery started mode=$mode selectedModel=$selectedModelId")
-        return DemoDiscoveryStartResult(fakeDevices(mode, selectedModelId))
+        debugFlow.tryEmit("fake discovery started mode=$mode selectedModel=$selectedModelKey")
+        return DemoDiscoveryStartResult(fakeDevices(mode, selectedModelKey))
     }
 
     override suspend fun connectReady(
         device: DiscoveredDevice,
-        channelKind: ProtocolChannelKind,
-        selectedModelId: DeviceModelId,
-        applyDecoderModule: Boolean,
+        selectedModelKey: String,
     ): DemoConnectResult {
         debugFlow.tryEmit(
             "fake connectReady device=${device.deviceId} transport=${device.transportType} " +
-                "channelKind=$channelKind selectedModel=$selectedModelId applyDecoderModule=$applyDecoderModule"
+                "selectedModel=$selectedModelKey"
         )
         return DemoConnectResult(
             session = null,
             fakeSession = FakeDemoSessionHandle(
                 deviceId = device.deviceId,
                 transportType = device.transportType,
-                selectedModelId = selectedModelId,
+                selectedModelKey = selectedModelKey,
             ),
         )
     }
 
-    private fun fakeDevices(mode: DemoTransportMode, selectedModelId: DeviceModelId): List<DiscoveredDevice> {
-        val model = if (selectedModelId == DeviceModelId.UNKNOWN) DeviceModelId.CS7501 else selectedModelId
+    private fun fakeDevices(mode: DemoTransportMode, selectedModelKey: String): List<DiscoveredDevice> {
+        val model = if (selectedModelKey == "") "CS7501" else selectedModelKey
         val transport = when (mode) {
             DemoTransportMode.BLE -> TransportType.BLE_GATT
             DemoTransportMode.SPP -> TransportType.SPP_CLASSIC
@@ -133,7 +123,7 @@ internal class FakeDemoDiscoveryBackend : DemoDiscoveryBackend {
                 deviceId = "FAKE-${mode.name}-$model-001",
                 name = "Fake ${mode.summary()} Scanner",
                 transportType = transport,
-                modelId = model,
+                modelKey = model,
                 matchReason = "fake-demo",
                 rssi = if (mode == DemoTransportMode.BLE) -48 else null,
             )

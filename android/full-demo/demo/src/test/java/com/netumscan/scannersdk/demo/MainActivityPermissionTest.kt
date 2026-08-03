@@ -19,6 +19,7 @@ class MainActivityPermissionTest {
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
             ),
             discoveryPermissionsForSdk(Build.VERSION_CODES.S, DemoTransportMode.BLE),
@@ -34,11 +35,12 @@ class MainActivityPermissionTest {
     }
 
     @Test
-    fun sppPermissionsForSAndAbove_requireScanConnectAndFineLocation() {
+    fun sppPermissionsForSAndAbove_requireScanConnectAndLocation() {
         assertContentEquals(
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
             ),
             discoveryPermissionsForSdk(Build.VERSION_CODES.S, DemoTransportMode.SPP),

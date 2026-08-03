@@ -22,7 +22,9 @@ extension AppViewModel {
         return ([
             title,
             "\(DemoStrings.tr("exported_at")): \(logDateFormatter.string(from: Date()))",
-        ] + scopeSummaryLines + deviceSummaryLines + ["", body]).joined(separator: "\n")
+        ] + scopeSummaryLines + deviceSummaryLines + ["", body])
+            .map(redactDemoLogMessage)
+            .joined(separator: "\n")
     }
 
     func makeCompatibilityRecordExport() -> String {

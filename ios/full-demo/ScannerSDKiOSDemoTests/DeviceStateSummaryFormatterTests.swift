@@ -35,11 +35,13 @@ final class DeviceStateSummaryFormatterTests: XCTestCase {
             versionChipsetCode: "chip",
             versionChipsetSuffix: "chipsfx",
             versionReleaseCode: "release",
-            versionExtensionCode: "ext"
+            versionExtensionCode: "ext",
+            bluetoothName: "scanner-bt",
+            bluetoothFirmwareVersion: "bt-fw"
         )
         let summary = DeviceStateSummaryFormatter.format(info: info)
 
-        XCTAssertEqual(summary.infoSummary, "固件=FW1.0  硬件=HW2.0  系列码=customer")
+        XCTAssertEqual(summary.infoSummary, "固件=FW1.0  硬件=HW2.0  系列码=customer  蓝牙名称=scanner-bt  蓝牙固件版本=bt-fw")
         XCTAssertEqual(summary.deviceCharsetSummary, "未读取")
         XCTAssertEqual(summary.deviceTerminalSummary, "未读取")
     }
@@ -62,11 +64,13 @@ final class DeviceStateSummaryFormatterTests: XCTestCase {
             versionChipsetCode: "",
             versionChipsetSuffix: "",
             versionReleaseCode: "",
-            versionExtensionCode: ""
+            versionExtensionCode: "",
+            bluetoothName: "",
+            bluetoothFirmwareVersion: ""
         )
         let summary = DeviceStateSummaryFormatter.format(info: info)
 
-        XCTAssertEqual(summary.infoSummary, "固件=-  硬件=-  系列码=-")
+        XCTAssertEqual(summary.infoSummary, "固件=-  硬件=-  系列码=-  蓝牙名称=-  蓝牙固件版本=-")
         XCTAssertEqual(summary.deviceCharsetSummary, "未读取")
         XCTAssertEqual(summary.deviceTerminalSummary, "未读取")
     }
