@@ -211,7 +211,10 @@ internal class QuickStartViewModel(
                     val devices = state.devices
                         .filterNot { it.deviceId == device.deviceId }
                         .plus(device)
-                        .sortedByDescending { it.rssi ?: Int.MIN_VALUE }
+                        .sortedWith(
+                            compareByDescending<QuickDevice> { it.name.contains("scanner", ignoreCase = true) }
+                                .thenByDescending { it.rssi ?: Int.MIN_VALUE }
+                        )
                     state.copy(devices = devices)
                 }
             }

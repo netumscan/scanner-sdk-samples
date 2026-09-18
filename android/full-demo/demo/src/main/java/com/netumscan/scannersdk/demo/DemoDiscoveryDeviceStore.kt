@@ -22,46 +22,30 @@ internal class DemoDiscoveryDeviceStore {
         return visibleDevices()
     }
 
-    fun visibleDevices(): List<DiscoveredDevice> {
-        val values = devices.values.asSequence()
-            .sortedWith(
-                compareByDescending<DiscoveredDevice> { isLikelyScanner(it) }
-                    .thenByDescending { it.rssi ?: Int.MIN_VALUE }
-                    .thenBy { it.name.lowercase() }
-            )
-            .toList()
-
-        val likely = values.filter(::isLikelyScanner)
-        val fallback = values.filterNot(::isLikelyScanner)
-        return (likely + fallback).take(12)
-    }
+    fun visibleDevices(): List<DiscoveredDevice> = devices.values.sortedWith(
+        compareByDescending<DiscoveredDevice> { isCandidate(it) }
+            .thenByDescending { it.rssi ?: Int.MIN_VALUE }
+            .thenBy { it.name.lowercase(java.util.Locale.ROOT) }
+            .thenBy { it.deviceId }
+    )
 
     private fun mergeDevice(old: DiscoveredDevice?, new: DiscoveredDevice): DiscoveredDevice {
         if (old == null) return new
-        return DiscoveredDevice(
-            deviceId = new.deviceId,
-            name = if (new.name.isNotBlank()) new.name else old.name,
-            transportType = new.transportType,
-            modelKey = new.modelKey.takeIf { it != "" } ?: old.modelKey,
+        return new.copy(
+            name = new.name.ifEmpty { old.name },
+            modelKey = new.modelKey.ifEmpty { old.modelKey },
             matchReason = new.matchReason ?: old.matchReason,
-            rssi = maxOf(old.rssi ?: Int.MIN_VALUE, new.rssi ?: Int.MIN_VALUE).takeIf { it != Int.MIN_VALUE },
+            rssi = new.rssi ?: old.rssi,
+            advertisementName = new.advertisementName.ifEmpty { old.advertisementName },
+            serviceUuids = new.serviceUuids.ifEmpty { old.serviceUuids },
+            manufacturerData = old.manufacturerData + new.manufacturerData,
+            serviceData = old.serviceData + new.serviceData,
+            connectable = new.connectable ?: old.connectable,
         )
     }
 
-    private fun isLikelyScanner(device: DiscoveredDevice): Boolean {
-        val name = device.name.lowercase()
-        return scannerKeywords.any { keyword -> keyword in name }
-    }
-
-    private companion object {
-        private val scannerKeywords = listOf(
-            "scanner",
-            "scan",
-            "barcode",
-            "2d",
-            "ble",
-            "rf",
-            "nt_",
-        )
-    }
+    private fun isCandidate(device: DiscoveredDevice): Boolean =
+        listOf(device.name, device.advertisementName).any { name ->
+            name.contains("scanner", ignoreCase = true) || name.contains("barcode", ignoreCase = true)
+        }
 }

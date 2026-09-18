@@ -5,7 +5,7 @@
     <string name="language_label_zh">中文</string>
     <string name="language_label_en">English</string>
     <string name="unknown_device_name">未知设备</string>
-    <string name="unnamed_device">未命名</string>
+    <string name="unnamed_device">未命名设备</string>
     <string name="empty_value">空</string>
     <string name="sdk_native_error_detail">%1$s（%2$s，code=%3$d）</string>
     <string name="sdk_error_success">成功</string>

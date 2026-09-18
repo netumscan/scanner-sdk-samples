@@ -1,8 +1,25 @@
 import XCTest
+import ScannerSDK
 @testable import ScannerSDKiOSDemo
 
 @MainActor
 final class DemoSupportedModelTests: XCTestCase {
+    func testSharedAdvertisementSamplesHaveIdenticalCandidateOrder() throws {
+        let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "ble-discovery", withExtension: "tsv"))
+        let text = try String(contentsOf: fixture, encoding: .utf8)
+        let rows = text.split(separator: "\n").filter { !$0.hasPrefix("#") }.map { $0.split(separator: "\t").map(String.init) }
+        let devices = rows.map { row in
+            DiscoveredDevice(deviceId: row[0], name: row[1] == "-" ? "" : row[1], transportType: .bleGatt,
+                rssi: Int(row[2]), advertisementName: row[3] == "-" ? "" : row[3],
+                connectable: row[9] == "-" ? nil : row[9] == "1")
+        }
+        let sorted = sortedDiscoveryDevices(devices)
+        XCTAssertEqual(sorted.map(\.deviceId), rows.sorted { Int($0[10])! < Int($1[10])! }.map { $0[0] })
+        XCTAssertEqual(sorted.count, 18)
+        XCTAssertEqual(sorted.first { $0.deviceId == "anonymous" }?.name, "")
+        XCTAssertEqual(sorted.first { $0.deviceId == "not-connectable" }?.connectable, false)
+    }
+
     func testNormalizePreservesSdkOrderAndRemovesInvalidDuplicates() {
         let models = [
             DemoSupportedModel(

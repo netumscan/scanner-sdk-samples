@@ -277,7 +277,7 @@ struct DiscoveryPageView: View {
                             onConnect(device)
                         }
                         .buttonStyle(.bordered)
-                        .disabled(viewModel.isExecuting || !viewModel.canInitiateConnection)
+                        .disabled(viewModel.isExecuting || !viewModel.canInitiateConnection || device.connectable == false)
 
                         if viewModel.hasActiveSession && viewModel.selectedDeviceID != device.deviceId {
                             Text(DemoStrings.tr("disconnect_before_connecting_another_device"))

@@ -1,13 +1,13 @@
 # Scanner SDK Android Quick Start
 
-English-only BLE GATT Quick Start for Scanner SDK `1.0.0`.
+English-only BLE GATT Quick Start for Scanner SDK `2.0.0`.
 
 ## SDK dependency
 
 The application resolves the released AAR from Maven Central:
 
 ```kotlin
-implementation("com.netumscan:scanner-sdk-android:1.0.0")
+implementation("com.netumscan:scanner-sdk-android:2.0.0")
 ```
 
 No local SDK project or `mavenLocal()` repository is used.

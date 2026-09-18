@@ -4,7 +4,7 @@
 "language_label_zh" = "中文";
 "language_label_en" = "English";
 "unknown_device_name" = "未知设备";
-"unnamed_device_name" = "未命名";
+"unnamed_device_name" = "未命名设备";
 "empty_value" = "空";
 "sdk_native_error_detail" = "%@（%@，code=%d）";
 "sdk_error_success" = "成功";

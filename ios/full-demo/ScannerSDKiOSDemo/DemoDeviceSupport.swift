@@ -83,3 +83,21 @@ func statusText(_ state: SessionState) -> String {
 func supportFlag(_ value: Bool) -> String {
     DemoStrings.tr(value ? "support_yes" : "support_no")
 }
+
+// Candidate is an App display hint, never a confirmed device model.
+func sortedDiscoveryDevices(_ devices: [DiscoveredDevice]) -> [DiscoveredDevice] {
+    func candidate(_ device: DiscoveredDevice) -> Bool {
+        [device.name, device.advertisementName].contains { name in
+            let name = name.lowercased()
+            return name.contains("scanner") || name.contains("barcode")
+        }
+    }
+    return devices.sorted { left, right in
+        if candidate(left) != candidate(right) { return candidate(left) }
+        if left.rssi != right.rssi { return (left.rssi ?? Int.min) > (right.rssi ?? Int.min) }
+        let leftName = left.name.lowercased()
+        let rightName = right.name.lowercased()
+        if leftName != rightName { return leftName < rightName }
+        return left.deviceId < right.deviceId
+    }
+}

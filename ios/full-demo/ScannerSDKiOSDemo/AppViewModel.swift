@@ -77,7 +77,7 @@ final class AppViewModel: ObservableObject {
         supportedModelsTask?.cancel()
     }
 
-    var displayDevices: [DiscoveredDevice] { devices }
+    var displayDevices: [DiscoveredDevice] { sortedDiscoveryDevices(devices) }
     var selectedModelSummary: String { formatSelectedModelSummary(selectedModelKey) }
     var statusSummary: String {
         if isConnecting { return DemoStrings.tr("connecting") }
@@ -336,7 +336,7 @@ final class AppViewModel: ObservableObject {
     }
 
     func connect(_ device: DiscoveredDevice) {
-        guard canInitiateConnection else { return }
+        guard canInitiateConnection, device.connectable != false else { return }
         isConnecting = true
         selectedDeviceID = device.deviceId
         stopDiscovery()

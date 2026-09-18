@@ -360,6 +360,7 @@ class DemoViewModel(
     }
 
     fun connect(device: DiscoveredDevice, onConnected: (() -> Unit)? = null) {
+        if (device.connectable == false) return
         val mode = DemoTransportMode.fromTransportType(device.transportType) ?: return
         if (!isInitialized) {
             reportAction {

@@ -1,11 +1,11 @@
 # Scanner SDK iOS Full Demo
 
-Maintained iOS reference application for Scanner SDK `1.0.0`.
+Maintained iOS reference application for Scanner SDK `2.0.0`.
 
 ## SDK dependency
 
 `project.yml` resolves
-`https://github.com/netumscan/scanner-sdk-ios.git` from `1.0.0`. The public
+`https://github.com/netumscan/scanner-sdk-ios.git` from `2.0.0`. The public
 Swift package downloads the versioned binary XCFramework; no local SwiftPM path
 or revision pin is used.
 

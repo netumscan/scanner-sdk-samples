@@ -1,11 +1,11 @@
 # Scanner SDK Android Full Demo
 
-Maintained Android reference application for Scanner SDK `1.0.0`.
+Maintained Android reference application for Scanner SDK `2.0.0`.
 
 ## SDK dependency
 
 The application resolves
-`com.netumscan:scanner-sdk-android:1.0.0` from Maven Central. It does not
+`com.netumscan:scanner-sdk-android:2.0.0` from Maven Central. It does not
 use a local SDK project or `mavenLocal()`.
 
 ## What the sample covers

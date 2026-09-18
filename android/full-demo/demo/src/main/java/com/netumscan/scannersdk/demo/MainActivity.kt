@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -457,7 +459,11 @@ internal fun DiscoveryWorkspaceCard(
             DropdownMenu(
                 expanded = modelMenuExpanded,
                 onDismissRequest = { modelMenuExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.92f)
+                // Keep the popup inside the usable screen instead of letting a long
+                // model list extend behind the system navigation bar on some ROMs.
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .heightIn(max = minOf(360.dp, (LocalConfiguration.current.screenHeightDp / 2).dp))
             ) {
                 uiState.supportedModels.forEach { model ->
                     DropdownMenuItem(
@@ -698,7 +704,7 @@ private fun DeviceCard(
     isConnecting: Boolean,
     onClick: () -> Unit,
 ) {
-    val title = device.name.ifBlank { device.deviceId }
+    val title = device.name.ifBlank { demoStringResource(R.string.unnamed_device) }
     val signal = device.rssi?.let { "RSSI $it" }
     val transportLabel = device.transportType.localizedLabel().let { SdkLabelResolver.resolve(it.localizationKey, it.fallbackDisplayName) }
     Card(
@@ -710,7 +716,7 @@ private fun DeviceCard(
             containerColor = if (isConnecting) DemoColors.SurfaceAccent else DemoColors.Surface,
             disabledContainerColor = if (isConnecting) DemoColors.SurfaceAccent else DemoColors.Surface,
         ),
-        enabled = clickEnabled,
+        enabled = clickEnabled && device.connectable != false,
         onClick = onClick
     ) {
         Column(

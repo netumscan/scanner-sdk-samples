@@ -68,6 +68,21 @@ class QuickStartViewModelTest {
     }
 
     @Test
+    fun `scanner names sort first regardless of case then by signal strength`() = runTest(dispatcher) {
+        val backend = FakeBackend()
+        val viewModel = QuickStartViewModel(backend)
+        advanceUntilIdle()
+
+        backend.emitDevice(QuickDevice("ble", "BLE Device", "", -20))
+        backend.emitDevice(QuickDevice("rw185", "RW185 SCANNERLE", "", -90))
+        backend.emitDevice(QuickDevice("mixed", "Pocket ScAnNeR", "", -60))
+        backend.emitDevice(QuickDevice("lower", "scanner", "", null))
+        advanceUntilIdle()
+
+        assertEquals(listOf("mixed", "rw185", "lower", "ble"), viewModel.uiState.value.devices.map { it.deviceId })
+    }
+
+    @Test
     fun `connection receives only the latest twenty scans and clears on disconnect`() = runTest(dispatcher) {
         val session = FakeSession()
         val backend = FakeBackend(session = session)

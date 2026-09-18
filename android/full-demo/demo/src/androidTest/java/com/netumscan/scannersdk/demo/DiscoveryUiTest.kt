@@ -1,10 +1,12 @@
 package com.netumscan.scannersdk.demo
 
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -29,5 +31,11 @@ class DiscoveryUiTest {
         composeRule.onNodeWithTag(DemoTestTags.DISCOVERY_MODEL_BUTTON).performClick()
         composeRule.onNodeWithTag(DemoTestTags.discoverySupportedModel("NT-1228BC"))
             .assertExists()
+        composeRule.onNodeWithTag(DemoTestTags.discoverySupportedModel("RW-185"))
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithTag(DemoTestTags.DISCOVERY_MODEL_BUTTON)
+            .assertTextContains("RW-185", substring = true)
     }
 }

@@ -1,0 +1,19 @@
+# id	name	rssi	advertisement_name	service_uuid	company_id_hex	manufacturer_hex	service_data_uuid	service_data_hex	connectable	sort_rank
+anonymous	-	-30	-	-	-	-	-	-	-	13
+rw185	RW185 SCANNERLE	-70	RW185 SCANNERLE	-	-	-	-	-	1	1
+sensor	Sensor	-10	Sensor	181A	-	-	-	-	0	4
+nus	UART	-20	-	6E400001-B5A3-F393-E0A9-E50E24DCCA9E	-	-	-	-	-	5
+manufacturer	-	-25	-	-	1234	00ff80	-	-	-	10
+service-data	-	-26	-	0000180F	-	-	180F	0080ff	1	11
+not-connectable	-	-27	-	-	-	-	-	-	0	12
+unknown	-	-	-	-	-	-	-	-	-	16
+barcode	Pocket BaRcOdE	-40	-	-	-	-	-	-	1	0
+ad-candidate	-	-80	Barcode tag	-	-	-	-	-	-	2
+candidate-no-rssi	Scanner	-	-	-	-	-	-	-	-	3
+ds	DS widget	-21	-	-	-	-	-	-	-	6
+nt	NT tag	-22	-	-	-	-	-	-	-	7
+cs	CS beacon	-23	-	-	-	-	-	-	-	8
+ble	BLE temp	-24	-	-	-	-	-	-	-	9
+tie-b	Thermometer	-50	-	-	-	-	-	-	-	15
+tie-a	Thermometer	-50	-	-	-	-	-	-	-	14
+sensor-no-rssi	Sensor	-	-	-	-	-	-	-	-	17
