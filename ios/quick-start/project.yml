@@ -4,7 +4,7 @@ options:
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    from: "2.0.0"
+    from: "2.0.1"
 targets:
   ScannerSDKQuickStart:
     type: application
@@ -16,8 +16,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.quickstart.ios
         PRODUCT_NAME: ScannerSDKQuickStart
-        MARKETING_VERSION: 2.0.0
-        CURRENT_PROJECT_VERSION: 15
+        MARKETING_VERSION: 2.0.1
+        CURRENT_PROJECT_VERSION: 16
         SWIFT_VERSION: "5.9"
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         GENERATE_INFOPLIST_FILE: YES

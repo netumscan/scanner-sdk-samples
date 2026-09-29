@@ -4,7 +4,7 @@ options:
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    from: "2.0.0"
+    from: "2.0.1"
 targets:
   ScannerSDKiOSDemo:
     type: application
@@ -47,8 +47,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.netumscan.scannersdk.demo.ios
         PRODUCT_NAME: ScannerSDKiOSDemo
-        MARKETING_VERSION: 2.0.0
-        CURRENT_PROJECT_VERSION: 15
+        MARKETING_VERSION: 2.0.1
+        CURRENT_PROJECT_VERSION: 16
         NSDK_SDK_COMMIT: local-dev
         SWIFT_VERSION: "5.9"
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"

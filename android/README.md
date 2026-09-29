@@ -1,6 +1,6 @@
 # Android Samples
 
-Android samples for Netum Scanner SDK `2.0.0`.
+Android samples for Netum Scanner SDK `2.0.1`.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ Android samples for Netum Scanner SDK `2.0.0`.
 Both applications consume the released AAR:
 
 ```kotlin
-implementation("com.netumscan:scanner-sdk-android:2.0.0")
+implementation("com.netumscan:scanner-sdk-android:2.0.1")
 ```
 
 They do not use `mavenLocal()` or a local `:sdk` project.

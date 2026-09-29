@@ -1,6 +1,6 @@
 # Scanner SDK iOS Quick Start
 
-English-only BLE GATT Quick Start for Scanner SDK `2.0.0`.
+English-only BLE GATT Quick Start for Scanner SDK `2.0.1`.
 
 ## SDK dependency
 
@@ -10,7 +10,7 @@ English-only BLE GATT Quick Start for Scanner SDK `2.0.0`.
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    from: "2.0.0"
+    from: "2.0.1"
 ```
 
 The package downloads the versioned binary XCFramework. No local SwiftPM path

@@ -1,6 +1,6 @@
 # iOS Samples
 
-iOS samples for Netum Scanner SDK `2.0.0`.
+iOS samples for Netum Scanner SDK `2.0.1`.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ Both applications consume:
 packages:
   ScannerSDK:
     url: https://github.com/netumscan/scanner-sdk-ios.git
-    from: "2.0.0"
+    from: "2.0.1"
 ```
 
 They do not use a local SwiftPM path or a revision pin. The public Swift package

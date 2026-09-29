@@ -15,8 +15,8 @@ android {
         applicationId = "com.netumscan.scannersdk.demo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "2.0.0"
+        versionCode = 16
+        versionName = "2.0.1"
         buildConfigField("String", "SDK_COMMIT", "\"${sdkSourceCommit.get()}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -49,7 +49,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
 
-    implementation("com.netumscan:scanner-sdk-android:2.0.0")
+    implementation("com.netumscan:scanner-sdk-android:2.0.1")
     implementation(composeBom)
     implementation("androidx.activity:activity-ktx:1.9.1")
     implementation("androidx.activity:activity-compose:1.9.1")

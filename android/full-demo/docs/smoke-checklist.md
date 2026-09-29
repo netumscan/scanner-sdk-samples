@@ -1,6 +1,6 @@
 # Android Full Demo Smoke Checklist
 
-Validate this source sample against Scanner SDK `2.0.0` and record the
+Validate this source sample against Scanner SDK `2.0.1` and record the
 scanner model and firmware used for the run.
 
 ## Build and launch
