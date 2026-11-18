@@ -1,6 +1,6 @@
 # scanner-sdk-samples
 
-Public source samples for Netum Scanner SDK. Android/iOS use `2.0.1`.
+Public source samples for Netum Scanner SDK. Android/iOS use `2.2.0`.
 
 The applications in this repository consume released SDK binaries. They do not
 build the SDK from source or require a local SDK checkout.
@@ -18,8 +18,8 @@ coverage, diagnostics, and recovery flows.
 
 ## Online SDK dependencies
 
-- Android: `com.netumscan:scanner-sdk-android:2.0.1` from Maven Central.
-- iOS: `https://github.com/netumscan/scanner-sdk-ios.git`, from `2.0.1`.
+- Android: `com.netumscan:scanner-sdk-android:2.2.0` from Maven Central.
+- iOS: `https://github.com/netumscan/scanner-sdk-ios.git`, from `2.2.0`.
   The Swift package resolves the versioned binary XCFramework.
 
 The samples do not use `mavenLocal()`, a local Android SDK project, a local

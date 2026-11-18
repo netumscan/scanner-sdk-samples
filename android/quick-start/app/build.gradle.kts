@@ -12,8 +12,8 @@ android {
         applicationId = "com.netumscan.scannersdk.quickstart"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "2.0.1"
+        versionCode = 17
+        versionName = "2.2.0"
     }
 
     buildTypes {
@@ -39,7 +39,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
 
-    implementation("com.netumscan:scanner-sdk-android:2.0.1")
+    implementation("com.netumscan:scanner-sdk-android:2.2.0")
     implementation(composeBom)
     implementation("androidx.activity:activity-compose:1.9.1")
     implementation("androidx.compose.foundation:foundation")
